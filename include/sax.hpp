@@ -28,9 +28,7 @@ public:
 
   bool next() {
     using namespace std;
-    while (strchr(BLANKS, *m_code)) {
-      ++m_code;
-    }
+    ignoreBlanks();
     if (*m_code == '<') {
       nextTag();
     } else if (strchr(BLANKS, *m_code) == nullptr) {
@@ -61,11 +59,7 @@ public:
    * We guaranteed that it defines an iterator, the operator[], the begin(),
    * end(), count() and size() and is able to be used with range-for.
    */
-  //   using params_map = std::unordered_map<std::string, std::string>;
-  struct params_map {
-    size_t m_size = 0;
-    size_t size() const { return m_size; }
-  };
+  using params_map = std::unordered_map<std::string, std::string>;
 
   /**
    * @brief Return the current parameters.
@@ -83,31 +77,67 @@ private:
   void nextTag() {
     using namespace std;
     assert(*m_code == '<');
-    auto valuebeg = ++m_code;
+    auto tag_beg = ++m_code;
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>' || *m_code == '/') {
-        m_value.assign(valuebeg, m_code);
+        m_value.assign(tag_beg, m_code);
         return;
       } else if (strchr(BLANKS, *m_code)) {
-        m_value.assign(valuebeg, m_code);
-        goto PARAMETERS;
+        m_value.assign(tag_beg, m_code);
+        goto PARAM_NAME;
       }
     }
     throw runtime_error("Unclosed tag.");
-  PARAMETERS:
-    bool inParameter = false;
+  PARAM_NAME:
+    ignoreBlanks();
+    string pname = "";
+    auto pname_beg = m_code++;
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>' || *m_code == '/') {
         return;
       }
-      if (!bool(strchr(BLANKS, *m_code)) != inParameter) {
-        if (inParameter) {
-          inParameter = false;
-        } else {
-          inParameter = true;
-          m_params.m_size++;
+      if (*m_code == '=' || strchr(BLANKS, *m_code)) {
+        if (m_code == pname_beg) {
+          throw runtime_error(
+              "Invalid Parameter. A name is expected before the '='");
         }
+        pname.assign(pname_beg, m_code);
+        goto PARAM_VALUE;
       }
+    }
+    throw runtime_error("Unclosed tag.");
+  PARAM_VALUE:
+    ignoreBlanks();
+    if (*m_code != '=') {
+      m_params[pname] = pname;
+      goto PARAM_NAME;
+    }
+    ++m_code;
+    ignoreBlanks();
+    if (!strchr("\"\'", *m_code)) {
+      throw runtime_error("Invalid Parameter '" + pname +
+                          "'. The parameter value must be "
+                          "surrounded by \' or \", we got: '" +
+                          *m_code + "'");
+    }
+    char endToken = *m_code++;
+    auto pvalue_beg = m_code++;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == '>') {
+        throw runtime_error("Expected a \' or \" before <");
+      }
+      if (*m_code == endToken) {
+        m_params[pname].assign(pvalue_beg, m_code);
+        ++m_code;
+        goto PARAM_NAME;
+      }
+    }
+    throw runtime_error("Unclosed tag.");
+  }
+
+  void ignoreBlanks() {
+    while (strchr(BLANKS, *m_code)) {
+      ++m_code;
     }
   }
 };
