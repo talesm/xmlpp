@@ -79,15 +79,17 @@ private:
     assert(*m_code == '<');
     auto tag_beg = ++m_code;
     for (; *m_code != 0; ++m_code) {
-      if (*m_code == '>' || *m_code == '/') {
+      if (strchr(BLANKS, *m_code) || *m_code == '>' || *m_code == '/') {
         m_value.assign(tag_beg, m_code);
+        parameters();
         return;
-      } else if (strchr(BLANKS, *m_code)) {
-        m_value.assign(tag_beg, m_code);
-        goto PARAM_NAME;
       }
     }
     throw runtime_error("Unclosed tag.");
+  }
+
+  void parameters() {
+    using namespace std;
   PARAM_NAME:
     ignoreBlanks();
     string pname = "";
@@ -105,7 +107,7 @@ private:
         goto PARAM_VALUE;
       }
     }
-    throw runtime_error("Unclosed tag.");
+    throw runtime_error("Expected close tag or parameter definition");
   PARAM_VALUE:
     ignoreBlanks();
     if (*m_code != '=') {
@@ -132,7 +134,7 @@ private:
         goto PARAM_NAME;
       }
     }
-    throw runtime_error("Unclosed tag.");
+    throw runtime_error("Unclosed parameter value");
   }
 
   void ignoreBlanks() {
