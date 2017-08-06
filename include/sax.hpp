@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 namespace xmlpp {
-enum class entity_type { TAG, TAG_ENDING };
+enum class entity_type { TAG, TAG_ENDING, COMMENT };
 
 /**
  * @brief A parser adhering to SAX inteface.
@@ -33,9 +33,16 @@ public:
       m_singletag = false;
       return true;
     }
+    if (*m_code == 0) {
+      return false;
+    }
     ignoreBlanks();
     if (*m_code == '<') {
-      nextTag();
+      if (*(m_code + 1) == '!') {
+        nextComment();
+      } else {
+        nextTag();
+      }
     } else if (strchr(BLANKS, *m_code) == nullptr) {
       throw runtime_error("Invalid char '"s + *m_code + "'");
     }
@@ -122,6 +129,27 @@ private:
     }
   }
 
+  void nextComment() {
+    assert(*m_code++ == '<');
+    assert(*m_code++ == '!');
+    expect('-');
+    expect('-');
+    auto comment_beg = m_code;
+    size_t level = 0;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == '-')
+        ++level;
+      else if (*m_code == '>' && level >= 2) {
+        m_type = entity_type::COMMENT;
+        m_value.assign(comment_beg, m_code - 2);
+        ++m_code;
+        return;
+      } else
+        level = 0;
+    }
+    throw std::runtime_error("Expected '-->' before end of the buffer");
+  }
+
   void parameters() {
     using namespace std;
   PARAM_NAME:
@@ -169,6 +197,16 @@ private:
       }
     }
     throw runtime_error("Unclosed parameter value");
+  }
+
+  void expect(char expected) {
+    if (*m_code == expected) {
+      ++m_code;
+    } else {
+      using namespace std;
+      throw std::runtime_error("Expected char '"s + expected + "', got '" +
+                               *m_code + "'.");
+    }
   }
 
   void ignoreBlanks() {

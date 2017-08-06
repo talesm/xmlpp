@@ -40,3 +40,18 @@ TEST_CASE("Tag closing", "[xmlpp][sax][tags]") {
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
   REQUIRE(s.type() == entity_type::TAG_ENDING);
 }
+
+TEST_CASE("Comments", "[xmlpp][sax][comments]") {
+  REQUIRE(sax("<!-- test comment -->").type() == entity_type::COMMENT);
+  CHECK(sax("<!-- test comment -->").value() == " test comment ");
+  REQUIRE(sax("<!--- test comment --->").type() == entity_type::COMMENT);
+  CHECK(sax("<!--- test comment --->").value() == "- test comment -");
+  sax s("<!-- Begin--><root><!--branch--><branch/></root><!--End -->");
+  REQUIRE((s++).type() == entity_type::COMMENT);
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::COMMENT);
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::TAG_ENDING);
+  REQUIRE((s++).type() == entity_type::TAG_ENDING);
+  REQUIRE((s++).type() == entity_type::COMMENT);
+}
