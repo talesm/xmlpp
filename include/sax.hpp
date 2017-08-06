@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 namespace xmlpp {
-enum class entity_type { TAG, TAG_ENDING, COMMENT };
+enum class entity_type { TAG, TAG_ENDING, COMMENT, TEXT };
 
 /**
  * @brief A parser adhering to SAX inteface.
@@ -43,8 +43,8 @@ public:
       } else {
         nextTag();
       }
-    } else if (strchr(BLANKS, *m_code) == nullptr) {
-      throw runtime_error("Invalid char '"s + *m_code + "'");
+    } else {
+      nextText();
     }
     return true;
   }
@@ -150,6 +150,17 @@ private:
     throw std::runtime_error("Expected '-->' before end of the buffer");
   }
 
+  void nextText() {
+    auto text_beg = m_code;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == '<') {
+        break;
+      }
+    }
+    m_type = entity_type::TEXT;
+    m_value.assign(text_beg, m_code);
+  }
+
   void parameters() {
     using namespace std;
   PARAM_NAME:
@@ -209,10 +220,12 @@ private:
     }
   }
 
-  void ignoreBlanks() {
+  size_t ignoreBlanks() {
+    auto initial = m_code;
     while (strchr(BLANKS, *m_code)) {
       ++m_code;
     }
+    return m_code - initial;
   }
 };
 }

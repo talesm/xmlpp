@@ -55,3 +55,7 @@ TEST_CASE("Comments", "[xmlpp][sax][comments]") {
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
   REQUIRE((s++).type() == entity_type::COMMENT);
 }
+
+TEST_CASE("Texts", "[xmlpp][sax][texts]") {
+  REQUIRE(sax("Some text").type() == entity_type::TEXT);
+}
