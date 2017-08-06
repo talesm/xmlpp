@@ -28,6 +28,11 @@ public:
 
   bool next() {
     using namespace std;
+    if (m_singletag) {
+      m_type = entity_type::TAG_ENDING;
+      m_singletag = false;
+      return true;
+    }
     ignoreBlanks();
     if (*m_code == '<') {
       nextTag();
@@ -40,6 +45,12 @@ public:
   sax &operator++() {
     next();
     return *this;
+  }
+
+  sax operator++(int) {
+    auto temp = *this;
+    next();
+    return temp;
   }
 
   /**
@@ -75,9 +86,10 @@ public:
 
 private:
   const char *m_code;
+  entity_type m_type;
   std::string m_value;
   params_map m_params;
-  entity_type m_type;
+  bool m_singletag = false;
 
 private:
   void nextTag() {
@@ -101,6 +113,7 @@ private:
     }
     if (*m_code == '/') {
       ++m_code;
+      m_singletag = true;
     }
     if (*m_code == '>') {
       ++m_code;

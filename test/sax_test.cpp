@@ -31,4 +31,12 @@ TEST_CASE("Tags with tags", "[xmlpp][sax][tags]") {
 }
 TEST_CASE("Tag closing", "[xmlpp][sax][tags]") {
   REQUIRE((++sax("<root></root>")).type() == entity_type::TAG_ENDING);
+  REQUIRE((++sax("<root/>")).type() == entity_type::TAG_ENDING);
+  sax s("<root><branch/><branch></branch></root>");
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::TAG_ENDING);
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::TAG_ENDING);
+  REQUIRE(s.type() == entity_type::TAG_ENDING);
 }
