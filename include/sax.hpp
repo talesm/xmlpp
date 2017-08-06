@@ -36,7 +36,7 @@ public:
     if (*m_code == 0) {
       return false;
     }
-    ignoreBlanks();
+    auto space = ignoreBlanks();
     if (*m_code == '<') {
       if (*(m_code + 1) == '!') {
         nextComment();
@@ -44,6 +44,7 @@ public:
         nextTag();
       }
     } else {
+      m_code -= space;
       nextText();
     }
     return true;

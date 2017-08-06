@@ -58,4 +58,14 @@ TEST_CASE("Comments", "[xmlpp][sax][comments]") {
 
 TEST_CASE("Texts", "[xmlpp][sax][texts]") {
   REQUIRE(sax("Some text").type() == entity_type::TEXT);
+  CHECK(sax("Some text").value() == "Some text");
+  REQUIRE(sax("  Some text").type() == entity_type::TEXT);
+  CHECK(sax("  Some text").value() == "  Some text");
+  sax s("  <root>Some text<branch/>Other text</root>");
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::TEXT);
+  REQUIRE((s++).type() == entity_type::TAG);
+  REQUIRE((s++).type() == entity_type::TAG_ENDING);
+  REQUIRE((s++).type() == entity_type::TEXT);
+  REQUIRE((s++).type() == entity_type::TAG_ENDING);
 }
