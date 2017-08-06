@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstring>
 #include <string>
 #include <unordered_map>
@@ -21,20 +22,21 @@ public:
    * @brief constructor that takes a c-string with the content.
    */
   sax(const char *code) {
+    m_code = code;
+    next();
+  }
+
+  bool next() {
     using namespace std;
-    for (; *code != 0; ++code) {
-      if (*code == '<') {
-        for (auto valueend = code + 1; *valueend != 0; ++valueend) {
-          if (strchr(">/ \t\n\r", *valueend)) {
-            m_value.assign(code + 1, valueend);
-            return;
-          }
-        }
-        throw runtime_error("Unclosed tag.");
-      } else if (strchr(BLANKS, *code) == nullptr) {
-        throw runtime_error("Invalid char '"s + *code + "'");
-      }
+    while (strchr(BLANKS, *m_code)) {
+      ++m_code;
     }
+    if (*m_code == '<') {
+      nextTag();
+    } else if (strchr(BLANKS, *m_code) == nullptr) {
+      throw runtime_error("Invalid char '"s + *m_code + "'");
+    }
+    return true;
   }
 
   /**
@@ -59,7 +61,11 @@ public:
    * We guaranteed that it defines an iterator, the operator[], the begin(),
    * end(), count() and size() and is able to be used with range-for.
    */
-  using params_map = std::unordered_map<std::string, std::string>;
+  //   using params_map = std::unordered_map<std::string, std::string>;
+  struct params_map {
+    size_t m_size = 0;
+    size_t size() const { return m_size; }
+  };
 
   /**
    * @brief Return the current parameters.
@@ -69,7 +75,40 @@ public:
   const params_map &params() const { return m_params; }
 
 private:
+  const char *m_code;
   std::string m_value;
   params_map m_params;
+
+private:
+  void nextTag() {
+    using namespace std;
+    assert(*m_code == '<');
+    auto valuebeg = ++m_code;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == '>' || *m_code == '/') {
+        m_value.assign(valuebeg, m_code);
+        return;
+      } else if (strchr(BLANKS, *m_code)) {
+        m_value.assign(valuebeg, m_code);
+        goto PARAMETERS;
+      }
+    }
+    throw runtime_error("Unclosed tag.");
+  PARAMETERS:
+    bool inParameter = false;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == '>' || *m_code == '/') {
+        return;
+      }
+      if (!bool(strchr(BLANKS, *m_code)) != inParameter) {
+        if (inParameter) {
+          inParameter = false;
+        } else {
+          inParameter = true;
+          m_params.m_size++;
+        }
+      }
+    }
+  }
 };
 }

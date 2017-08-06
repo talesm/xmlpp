@@ -5,6 +5,7 @@
         ".clangformat": "ini",
         "array": "cpp",
         "initializer_list": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "cstring": "cpp"
     }
 }
