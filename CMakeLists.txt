@@ -9,4 +9,5 @@ target_include_directories(xmlpp
     INTERFACE include/
 )
 
+enable_testing()
 add_subdirectory(test)
