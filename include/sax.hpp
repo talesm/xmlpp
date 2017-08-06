@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 namespace xmlpp {
-enum class entity_type { tag };
+enum class entity_type { TAG, TAG_ENDING };
 
 /**
  * @brief A parser adhering to SAX inteface.
@@ -37,10 +37,15 @@ public:
     return true;
   }
 
+  sax &operator++() {
+    next();
+    return *this;
+  }
+
   /**
    * @brief returns the type of the current node.
    */
-  entity_type type() const { return entity_type::tag; }
+  entity_type type() const { return m_type; }
 
   /**
    * @brief Returns the value of the current node.
@@ -72,12 +77,21 @@ private:
   const char *m_code;
   std::string m_value;
   params_map m_params;
+  entity_type m_type;
 
 private:
   void nextTag() {
     using namespace std;
     assert(*m_code == '<');
     auto tag_beg = ++m_code;
+    bool closing = false;
+    if (*m_code == '/') {
+      closing = true;
+      ++m_code;
+      m_type = entity_type::TAG_ENDING;
+    } else {
+      m_type = entity_type::TAG;
+    }
     for (; *m_code != 0; ++m_code) {
       if (strchr(BLANKS, *m_code) || *m_code == '>' || *m_code == '/') {
         m_value.assign(tag_beg, m_code);
