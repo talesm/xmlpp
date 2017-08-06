@@ -82,10 +82,17 @@ private:
       if (strchr(BLANKS, *m_code) || *m_code == '>' || *m_code == '/') {
         m_value.assign(tag_beg, m_code);
         parameters();
-        return;
+        break;
       }
     }
-    throw runtime_error("Unclosed tag.");
+    if (*m_code == '/') {
+      ++m_code;
+    }
+    if (*m_code == '>') {
+      ++m_code;
+    } else {
+      throw runtime_error("Unclosed tag.");
+    }
   }
 
   void parameters() {
@@ -93,7 +100,7 @@ private:
   PARAM_NAME:
     ignoreBlanks();
     string pname = "";
-    auto pname_beg = m_code++;
+    auto pname_beg = m_code;
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>' || *m_code == '/') {
         return;

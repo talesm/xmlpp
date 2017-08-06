@@ -20,3 +20,12 @@ TEST_CASE("Tags with parameters", "[xmlpp][sax][tags]") {
   REQUIRE(s.params().at("param1") == "ahoy");
   REQUIRE(s.params().size() == 3);
 }
+
+TEST_CASE("Tags with tags", "[xmlpp][sax][tags]") {
+  sax s("<root><branch/></root>");
+  REQUIRE(s.type() == entity_type::tag);
+  REQUIRE(s.value() == "root");
+  s.next();
+  REQUIRE(s.type() == entity_type::tag);
+  REQUIRE(s.value() == "branch");
+}
