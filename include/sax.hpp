@@ -40,6 +40,9 @@ public:
     if (*m_code == '<') {
       if (*(m_code + 1) == '!') {
         nextComment();
+      } else if (*(m_code + 1) == '?') {
+        nextDeclaration();
+        return next();
       } else {
         nextTag();
       }
@@ -92,12 +95,31 @@ public:
    */
   const params_map &params() const { return m_params; }
 
+  /**
+   * @brief Return the document's encoding.
+   *
+   *  Currently it always will return "UTF-8"
+   */
+  const std::string encoding() const { return "UTF-8"; }
+
+  /**
+   * @brief Return the document's xml version.
+   *
+   * This will report whatever is informed on the XML declaration or
+   * "1.0" if no declaration is provided.
+
+   * In the future different behaviour can be enabled for different versions.
+   */
+  const std::string &version() const { return m_version; }
+
 private:
   const char *m_code;
   entity_type m_type;
   std::string m_value;
   params_map m_params;
   bool m_singletag = false;
+  bool m_initialized = false;
+  std::string m_version = "1.0";
 
 private:
   void nextTag() {
@@ -161,6 +183,31 @@ private:
     m_type = entity_type::TEXT;
     m_value.assign(text_beg, m_code);
   }
+  void nextDeclaration() {
+    if (m_initialized) {
+      throw std::runtime_error(
+          "Invalid declaration or using processor "
+          "instruction, which aren't currently implemented.");
+    }
+    assert(*m_code++ == '<');
+    assert(*m_code++ == '?');
+    expect('x');
+    expect('m');
+    expect('l');
+    parameters();
+    if (m_params.count("encoding")) {
+      auto encoding = m_params["encoding"];
+      if (encoding != "UTF-8") {
+        throw std::runtime_error("Invalid encoding:" + encoding);
+      }
+    }
+    if (m_params.count("version")) {
+      m_version = m_params["version"];
+    }
+    expect('?');
+    expect('>');
+    m_initialized = true;
+  }
 
   void parameters() {
     using namespace std;
@@ -169,7 +216,7 @@ private:
     string pname = "";
     auto pname_beg = m_code;
     for (; *m_code != 0; ++m_code) {
-      if (*m_code == '>' || *m_code == '/') {
+      if (*m_code == '>' || *m_code == '/' || *m_code == '?') {
         return;
       }
       if (*m_code == '=' || strchr(BLANKS, *m_code)) {

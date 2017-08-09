@@ -69,3 +69,18 @@ TEST_CASE("Texts", "[xmlpp][sax][texts]") {
   REQUIRE((s++).type() == entity_type::TEXT);
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
 }
+
+TEST_CASE("Xml declartion", "[xmlpp][sax][declaration]") {
+  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?><root/>").value() ==
+          "root");
+  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?>text").value() == "text");
+  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?>text").encoding() ==
+          "UTF-8");
+  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?>text").version() == "1.0");
+  REQUIRE(sax("<?xml version='1.1' encoding='UTF-8'?>text").version() == "1.1");
+}
+
+// TODO: entities.
+// TODO: CDATA
+// TODO: filters
+// TODO: CHECK for invalid symbols in tags.
