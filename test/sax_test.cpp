@@ -70,6 +70,13 @@ TEST_CASE("Texts", "[xmlpp][sax][texts]") {
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
 }
 
+TEST_CASE("Text with escaping", "[xmlpp][sax][texts]") {
+  REQUIRE(sax("text&apos;s &lt;&quot;escaped&quot;&gt; &amp; quoted").value() ==
+          "text's <\"escaped\"> & quoted");
+  REQUIRE(sax("text&#32;with&#x20;spaces").value() == "text with spaces");
+  REQUIRE(sax("I &lt;3 J&#xF6;rg").value() == "I <3 Jörg");
+}
+
 TEST_CASE("Xml declartion", "[xmlpp][sax][declaration]") {
   REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?><root/>").value() ==
           "root");

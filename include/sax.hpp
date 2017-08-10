@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <cstring>
+#include <cuchar>
+#include <map>
 #include <string>
 #include <unordered_map>
 
@@ -175,14 +177,21 @@ private:
 
   void nextText() {
     auto text_beg = m_code;
+    m_value.clear();
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '<') {
         break;
       }
+      if (*m_code == '&') {
+        m_value.append(text_beg, m_code);
+        m_value.append(escapeSequence());
+        text_beg = m_code + 1;
+      }
     }
     m_type = entity_type::TEXT;
-    m_value.assign(text_beg, m_code);
+    m_value.append(text_beg, m_code);
   }
+
   void nextDeclaration() {
     if (m_initialized) {
       throw std::runtime_error(
@@ -207,6 +216,57 @@ private:
     expect('?');
     expect('>');
     m_initialized = true;
+  }
+
+  std::string escapeSequence() {
+    using namespace std;
+    ensure('&');
+    auto escape_beg = m_code;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == ';') {
+        std::string escape(escape_beg, m_code);
+        if (escape[0] == '#') {
+          char32_t value = 0;
+          if (escape[1] == 'x') {
+            for (size_t i = 2; i < escape.size(); ++i) {
+              value *= 0x10;
+              if (isdigit(escape[i])) {
+                value += escape[i] & 0xf;
+              } else if (isupper(escape[i])) {
+                value += (escape[i] - 'A') | 0xA;
+              } else {
+                value += (escape[i] - 'a') | 0xA;
+              }
+            }
+          } else {
+            for (size_t i = 1; i < escape.size(); ++i) {
+              value *= 10;
+              value += escape[i] & 0xf;
+            }
+          }
+          if (value) {
+            if (value < 0x7f) {
+              return {char(value)};
+            } else {
+              string locale = std::setlocale(LC_ALL, nullptr);
+              std::setlocale(LC_ALL, "en_US.utf8");
+              char buffer[MB_CUR_MAX + 1];
+              std::mbstate_t state{};
+              auto end = c32rtomb(buffer, value, &state);
+              buffer[end] = 0;
+              std::setlocale(LC_ALL, locale.c_str());
+              return string(buffer);
+            }
+          }
+        }
+        static map<string, string> escapeMapping = {{"lt", "<"},
+                                                    {"gt", ">"},
+                                                    {"amp", "&"},
+                                                    {"quot", "\""},
+                                                    {"apos", "'"}};
+        return escapeMapping[escape];
+      }
+    }
   }
 
   void parameters() {
@@ -266,6 +326,11 @@ private:
       throw std::runtime_error("Expected char '"s + expected + "', got '" +
                                *m_code + "'.");
     }
+  }
+
+  void ensure(char expected) {
+    assert(*m_code == expected);
+    ++m_code;
   }
 
   size_t ignoreBlanks() {
