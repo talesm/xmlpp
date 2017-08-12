@@ -1,8 +1,9 @@
 #include "catch.hpp"
 #include "sax.hpp"
-#include <stddef.h>
+#include <cstddef>
 
 using namespace xmlpp;
+using namespace std;
 
 TEST_CASE("Tags", "[xmlpp][sax][tags]") {
   sax s("<root/>");
@@ -14,14 +15,16 @@ TEST_CASE("Tags", "[xmlpp][sax][tags]") {
   REQUIRE(sax("<root></root>").value() == "root");
 }
 TEST_CASE("Tags with parameters", "[xmlpp][sax][tags]") {
-  sax s("<root param1=\"ahoy\" param2=\"test\" párêmçï='test'/>");
+  sax s("<root param1=\"ahoy\" param2=\"test&apos;s test\" párêmçï='test'/>");
   REQUIRE(s.type() == entity_type::TAG);
   REQUIRE(s.value() == "root");
   REQUIRE(s.params().at("param1") == "ahoy");
+  REQUIRE(s.params().at("párêmçï") == "test");
+  REQUIRE(s.params().at("param2") == "test's test");
   REQUIRE(s.params().size() == 3);
 }
 
-TEST_CASE("Tags with tags", "[xmlpp][sax][tags]") {
+TEST_CASE("Tags within tags", "[xmlpp][sax][tags]") {
   sax s("<root><branch/></root>");
   REQUIRE(s.type() == entity_type::TAG);
   REQUIRE(s.value() == "root");

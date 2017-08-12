@@ -305,12 +305,18 @@ private:
     }
     char endToken = *m_code++;
     auto pvalue_beg = m_code++;
+    m_params[pname].clear();
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>') {
         throw runtime_error("Expected a \' or \" before <");
       }
+      if (*m_code == '&') {
+        m_params[pname].append(pvalue_beg, m_code);
+        m_params[pname].append(escapeSequence());
+        pvalue_beg = m_code + 1;
+      }
       if (*m_code == endToken) {
-        m_params[pname].assign(pvalue_beg, m_code);
+        m_params[pname].append(pvalue_beg, m_code);
         ++m_code;
         goto PARAM_NAME;
       }
