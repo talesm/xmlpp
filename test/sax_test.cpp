@@ -78,6 +78,9 @@ TEST_CASE("Text with escaping", "[xmlpp][sax][texts]") {
           "text's <\"escaped\"> & quoted");
   REQUIRE(sax("text&#32;with&#x20;spaces").value() == "text with spaces");
   REQUIRE(sax("I &lt;3 J&#xF6;rg").value() == "I <3 Jörg");
+  REQUIRE(sax("<![CDATA[<\"Escaped's\">]]>").value() == "<\"Escaped's\">");
+  REQUIRE(sax("between <![CDATA[<\"Escaped\">]]> text").value() ==
+          "between <\"Escaped\"> text");
 }
 
 TEST_CASE("Xml declartion", "[xmlpp][sax][declaration]") {
@@ -90,7 +93,5 @@ TEST_CASE("Xml declartion", "[xmlpp][sax][declaration]") {
   REQUIRE(sax("<?xml version='1.1' encoding='UTF-8'?>text").version() == "1.1");
 }
 
-// TODO: entities.
-// TODO: CDATA
 // TODO: filters
 // TODO: CHECK for invalid symbols in tags.

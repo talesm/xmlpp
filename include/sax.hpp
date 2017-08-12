@@ -41,7 +41,11 @@ public:
     auto space = ignoreBlanks();
     if (*m_code == '<') {
       if (*(m_code + 1) == '!') {
-        nextComment();
+        if (*(m_code + 2) == '-') {
+          nextComment();
+        } else if (*(m_code + 2) == '[') {
+          nextText();
+        }
       } else if (*(m_code + 1) == '?') {
         nextDeclaration();
         return next();
@@ -180,7 +184,13 @@ private:
     m_value.clear();
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '<') {
-        break;
+        if (*(m_code + 1) == '!' && *(m_code + 2) == '[') {
+          m_value.append(text_beg, m_code);
+          m_value.append(cdataSequence());
+          text_beg = m_code--;
+        } else {
+          break;
+        }
       }
       if (*m_code == '&') {
         m_value.append(text_beg, m_code);
@@ -218,6 +228,30 @@ private:
     m_initialized = true;
   }
 
+  std::string cdataSequence() {
+    using namespace std;
+    ensure('<');
+    ensure('!');
+    ensure('[');
+    expect('C');
+    expect('D');
+    expect('A');
+    expect('T');
+    expect('A');
+    expect('[');
+    auto cdata_beg = m_code;
+    string result;
+    for (; *m_code != 0; ++m_code) {
+      if (*m_code == ']' && *(m_code + 1) == ']' && *(m_code + 2) == '>') {
+        result.assign(cdata_beg, m_code);
+        break;
+      }
+    }
+    ensure(']');
+    ensure(']');
+    ensure('>');
+    return result;
+  }
   std::string escapeSequence() {
     using namespace std;
     ensure('&');
