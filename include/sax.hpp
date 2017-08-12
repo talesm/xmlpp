@@ -195,7 +195,7 @@ private:
       if (*m_code == '&') {
         m_value.append(text_beg, m_code);
         m_value.append(escapeSequence());
-        text_beg = m_code + 1;
+        text_beg = m_code--;
       }
     }
     m_type = entity_type::TEXT;
@@ -259,6 +259,7 @@ private:
     for (; *m_code != 0; ++m_code) {
       if (*m_code == ';') {
         std::string escape(escape_beg, m_code);
+        ensure(';');
         if (escape[0] == '#') {
           char32_t value = 0;
           if (escape[1] == 'x') {
@@ -347,7 +348,7 @@ private:
       if (*m_code == '&') {
         m_params[pname].append(pvalue_beg, m_code);
         m_params[pname].append(escapeSequence());
-        pvalue_beg = m_code + 1;
+        pvalue_beg = m_code--;
       }
       if (*m_code == endToken) {
         m_params[pname].append(pvalue_beg, m_code);
