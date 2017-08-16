@@ -14,6 +14,11 @@ TEST_CASE("Tags", "[xmlpp][sax][tags]") {
   REQUIRE(sax("<root />").value() == "root");
   REQUIRE(sax("<root></root>").value() == "root");
 }
+TEST_CASE("Tag Error", "[xmlpp][sax][tags][error]") {
+  REQUIRE_THROWS_AS(sax("<root"), parser_error);
+  // TODO: Other invalid chars.
+}
+
 TEST_CASE("Tags with parameters", "[xmlpp][sax][tags]") {
   sax s("<root param1=\"ahoy\" param2=\"test&apos;s test\" párêmçï='test'/>");
   REQUIRE(s.type() == entity_type::TAG);

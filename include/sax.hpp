@@ -1,5 +1,6 @@
 #pragma once
 
+#include "parser_error.hpp"
 #include <cassert>
 #include <cstring>
 #include <cuchar>
@@ -154,7 +155,7 @@ private:
     if (*m_code == '>') {
       ++m_code;
     } else {
-      throw runtime_error("Unclosed tag.");
+      throw parser_error("Unclosed tag.");
     }
   }
 
@@ -176,7 +177,7 @@ private:
       } else
         level = 0;
     }
-    throw std::runtime_error("Expected '-->' before end of the buffer");
+    throw parser_error("Expected '-->' before end of the buffer");
   }
 
   void nextText() {
@@ -204,9 +205,8 @@ private:
 
   void nextDeclaration() {
     if (m_initialized) {
-      throw std::runtime_error(
-          "Invalid declaration or using processor "
-          "instruction, which aren't currently implemented.");
+      throw parser_error("Invalid declaration or using processor "
+                         "instruction, which aren't currently implemented.");
     }
     assert(*m_code++ == '<');
     assert(*m_code++ == '?');
@@ -217,7 +217,7 @@ private:
     if (m_params.count("encoding")) {
       auto encoding = m_params["encoding"];
       if (encoding != "UTF-8") {
-        throw std::runtime_error("Invalid encoding:" + encoding);
+        throw parser_error("Invalid encoding:" + encoding);
       }
     }
     if (m_params.count("version")) {
@@ -316,14 +316,14 @@ private:
       }
       if (*m_code == '=' || strchr(BLANKS, *m_code)) {
         if (m_code == pname_beg) {
-          throw runtime_error(
+          throw parser_error(
               "Invalid Parameter. A name is expected before the '='");
         }
         pname.assign(pname_beg, m_code);
         goto PARAM_VALUE;
       }
     }
-    throw runtime_error("Expected close tag or parameter definition");
+    throw parser_error("Expected close tag or parameter definition");
   PARAM_VALUE:
     ignoreBlanks();
     if (*m_code != '=') {
@@ -333,17 +333,17 @@ private:
     ++m_code;
     ignoreBlanks();
     if (!strchr("\"\'", *m_code)) {
-      throw runtime_error("Invalid Parameter '" + pname +
-                          "'. The parameter value must be "
-                          "surrounded by \' or \", we got: '" +
-                          *m_code + "'");
+      throw parser_error("Invalid Parameter '" + pname +
+                         "'. The parameter value must be "
+                         "surrounded by \' or \", we got: '" +
+                         *m_code + "'");
     }
     char endToken = *m_code++;
     auto pvalue_beg = m_code++;
     m_params[pname].clear();
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>') {
-        throw runtime_error("Expected a \' or \" before <");
+        throw parser_error("Expected a \' or \" before <");
       }
       if (*m_code == '&') {
         m_params[pname].append(pvalue_beg, m_code);
@@ -356,7 +356,7 @@ private:
         goto PARAM_NAME;
       }
     }
-    throw runtime_error("Unclosed parameter value");
+    throw parser_error("Unclosed parameter value");
   }
 
   void expect(char expected) {
@@ -364,8 +364,8 @@ private:
       ++m_code;
     } else {
       using namespace std;
-      throw std::runtime_error("Expected char '"s + expected + "', got '" +
-                               *m_code + "'.");
+      throw parser_error("Expected char '"s + expected + "', got '" + *m_code +
+                         "'.");
     }
   }
 
