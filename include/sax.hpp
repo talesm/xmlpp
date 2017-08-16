@@ -5,6 +5,7 @@
 #include <cstring>
 #include <cuchar>
 #include <map>
+#include <stack>
 #include <string>
 #include <unordered_map>
 
@@ -127,6 +128,7 @@ private:
   bool m_singletag = false;
   bool m_initialized = false;
   std::string m_version = "1.0";
+  std::stack<std::string> m_tagStack;
 
 private:
   void nextTag() {
@@ -136,7 +138,7 @@ private:
     bool closing = false;
     if (*m_code == '/') {
       closing = true;
-      ++m_code;
+      tag_beg = ++m_code;
       m_type = entity_type::TAG_ENDING;
     } else {
       m_type = entity_type::TAG;
@@ -148,9 +150,19 @@ private:
         break;
       }
     }
-    if (*m_code == '/') {
-      ++m_code;
-      m_singletag = true;
+    if (m_type == entity_type::TAG) {
+      if (*m_code == '/') {
+        ++m_code;
+        m_singletag = true;
+      } else {
+        m_tagStack.push(m_value);
+      }
+    } else {
+      if (m_tagStack.top() != m_value) {
+        throw parser_error("Tag mismatch, opened with: " + m_tagStack.top() +
+                           ", but closed with: " + m_value);
+      }
+      m_tagStack.pop();
     }
     if (*m_code == '>') {
       ++m_code;

@@ -48,6 +48,9 @@ TEST_CASE("Tag closing", "[xmlpp][sax][tags]") {
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
   REQUIRE(s.type() == entity_type::TAG_ENDING);
 }
+TEST_CASE("Tags closing mismatch", "[xmlpp][sax][tags]") {
+  REQUIRE_THROWS_AS(++++sax("<root></notroot>"), parser_error);
+}
 
 TEST_CASE("Comments", "[xmlpp][sax][comments]") {
   REQUIRE(sax("<!-- test comment -->").type() == entity_type::COMMENT);
