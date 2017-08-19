@@ -20,5 +20,5 @@ before_script:
 script: 
   - mkdir build/ && cd build/
   - cmake ../
-  - make
+  - make CXXFLAGS="-std=c++11"
   - ctest
