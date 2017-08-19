@@ -19,13 +19,13 @@ enum class entity_type { TAG, TAG_ENDING, COMMENT, TEXT };
  * time you call next() (or operator++()) it will advance to next
  * entity, in a Depth first approach.
  */
-class sax {
+class parser {
 public:
   static constexpr const char *BLANKS = " \t\n\r";
   /**
    * @brief constructor that takes a c-string with the content.
    */
-  sax(const char *code) {
+  parser(const char *code) {
     m_code = code;
     next();
   }
@@ -61,12 +61,12 @@ public:
     return true;
   }
 
-  sax &operator++() {
+  parser &operator++() {
     next();
     return *this;
   }
 
-  sax operator++(int) {
+  parser operator++(int) {
     auto temp = *this;
     next();
     return temp;

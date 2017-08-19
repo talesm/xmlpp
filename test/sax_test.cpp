@@ -1,26 +1,27 @@
 #include "catch.hpp"
-#include "sax.hpp"
+#include "parser.hpp"
 #include <cstddef>
 
 using namespace xmlpp;
 using namespace std;
 
-TEST_CASE("Tags", "[xmlpp][sax][tags]") {
-  sax s("<root/>");
+TEST_CASE("Tags", "[xmlpp][parser][tags]") {
+  parser s("<root/>");
   REQUIRE(s.type() == entity_type::TAG);
   REQUIRE(s.value() == "root");
   REQUIRE(s.params().size() == 0);
-  REQUIRE(sax("<notroot/>").value() == "notroot");
-  REQUIRE(sax("<root />").value() == "root");
-  REQUIRE(sax("<root></root>").value() == "root");
+  REQUIRE(parser("<notroot/>").value() == "notroot");
+  REQUIRE(parser("<root />").value() == "root");
+  REQUIRE(parser("<root></root>").value() == "root");
 }
-TEST_CASE("Tag Error", "[xmlpp][sax][tags][error]") {
-  REQUIRE_THROWS_AS(sax("<root"), parser_error);
+TEST_CASE("Tag Error", "[xmlpp][parser][tags][error]") {
+  REQUIRE_THROWS_AS(parser("<root"), parser_error);
   // TODO: Other invalid chars.
 }
 
-TEST_CASE("Tags with parameters", "[xmlpp][sax][tags]") {
-  sax s("<root param1=\"ahoy\" param2=\"test&apos;s test\" párêmçï='test'/>");
+TEST_CASE("Tags with parameters", "[xmlpp][parser][tags]") {
+  parser s(
+      "<root param1=\"ahoy\" param2=\"test&apos;s test\" párêmçï='test'/>");
   REQUIRE(s.type() == entity_type::TAG);
   REQUIRE(s.value() == "root");
   REQUIRE(s.params().at("param1") == "ahoy");
@@ -29,18 +30,18 @@ TEST_CASE("Tags with parameters", "[xmlpp][sax][tags]") {
   REQUIRE(s.params().size() == 3);
 }
 
-TEST_CASE("Tags within tags", "[xmlpp][sax][tags]") {
-  sax s("<root><branch/></root>");
+TEST_CASE("Tags within tags", "[xmlpp][parser][tags]") {
+  parser s("<root><branch/></root>");
   REQUIRE(s.type() == entity_type::TAG);
   REQUIRE(s.value() == "root");
   s.next();
   REQUIRE(s.type() == entity_type::TAG);
   REQUIRE(s.value() == "branch");
 }
-TEST_CASE("Tag closing", "[xmlpp][sax][tags]") {
-  REQUIRE((++sax("<root></root>")).type() == entity_type::TAG_ENDING);
-  REQUIRE((++sax("<root/>")).type() == entity_type::TAG_ENDING);
-  sax s("<root><branch/><branch></branch></root>");
+TEST_CASE("Tag closing", "[xmlpp][parser][tags]") {
+  REQUIRE((++parser("<root></root>")).type() == entity_type::TAG_ENDING);
+  REQUIRE((++parser("<root/>")).type() == entity_type::TAG_ENDING);
+  parser s("<root><branch/><branch></branch></root>");
   REQUIRE((s++).type() == entity_type::TAG);
   REQUIRE((s++).type() == entity_type::TAG);
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
@@ -48,16 +49,16 @@ TEST_CASE("Tag closing", "[xmlpp][sax][tags]") {
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
   REQUIRE(s.type() == entity_type::TAG_ENDING);
 }
-TEST_CASE("Tags closing mismatch", "[xmlpp][sax][tags]") {
-  REQUIRE_THROWS_AS(++++sax("<root></notroot>"), parser_error);
+TEST_CASE("Tags closing mismatch", "[xmlpp][parser][tags]") {
+  REQUIRE_THROWS_AS(++++parser("<root></notroot>"), parser_error);
 }
 
-TEST_CASE("Comments", "[xmlpp][sax][comments]") {
-  REQUIRE(sax("<!-- test comment -->").type() == entity_type::COMMENT);
-  CHECK(sax("<!-- test comment -->").value() == " test comment ");
-  REQUIRE(sax("<!--- test comment --->").type() == entity_type::COMMENT);
-  CHECK(sax("<!--- test comment --->").value() == "- test comment -");
-  sax s("<!-- Begin--><root><!--branch--><branch/></root><!--End -->");
+TEST_CASE("Comments", "[xmlpp][parser][comments]") {
+  REQUIRE(parser("<!-- test comment -->").type() == entity_type::COMMENT);
+  CHECK(parser("<!-- test comment -->").value() == " test comment ");
+  REQUIRE(parser("<!--- test comment --->").type() == entity_type::COMMENT);
+  CHECK(parser("<!--- test comment --->").value() == "- test comment -");
+  parser s("<!-- Begin--><root><!--branch--><branch/></root><!--End -->");
   REQUIRE((s++).type() == entity_type::COMMENT);
   REQUIRE((s++).type() == entity_type::TAG);
   REQUIRE((s++).type() == entity_type::COMMENT);
@@ -67,12 +68,12 @@ TEST_CASE("Comments", "[xmlpp][sax][comments]") {
   REQUIRE((s++).type() == entity_type::COMMENT);
 }
 
-TEST_CASE("Texts", "[xmlpp][sax][texts]") {
-  REQUIRE(sax("Some text").type() == entity_type::TEXT);
-  CHECK(sax("Some text").value() == "Some text");
-  REQUIRE(sax("  Some text").type() == entity_type::TEXT);
-  CHECK(sax("  Some text").value() == "  Some text");
-  sax s("  <root>Some text<branch/>Other text</root>");
+TEST_CASE("Texts", "[xmlpp][parser][texts]") {
+  REQUIRE(parser("Some text").type() == entity_type::TEXT);
+  CHECK(parser("Some text").value() == "Some text");
+  REQUIRE(parser("  Some text").type() == entity_type::TEXT);
+  CHECK(parser("  Some text").value() == "  Some text");
+  parser s("  <root>Some text<branch/>Other text</root>");
   REQUIRE((s++).type() == entity_type::TAG);
   REQUIRE((s++).type() == entity_type::TEXT);
   REQUIRE((s++).type() == entity_type::TAG);
@@ -81,24 +82,28 @@ TEST_CASE("Texts", "[xmlpp][sax][texts]") {
   REQUIRE((s++).type() == entity_type::TAG_ENDING);
 }
 
-TEST_CASE("Text with escaping", "[xmlpp][sax][texts]") {
-  REQUIRE(sax("text&apos;s &lt;&quot;escaped&quot;&gt; &amp; quoted").value() ==
-          "text's <\"escaped\"> & quoted");
-  REQUIRE(sax("text&#32;with&#x20;spaces").value() == "text with spaces");
-  REQUIRE(sax("I &lt;3 J&#xF6;rg").value() == "I <3 Jörg");
-  REQUIRE(sax("<![CDATA[<\"Escaped's\">]]>").value() == "<\"Escaped's\">");
-  REQUIRE(sax("between <![CDATA[<\"Escaped\">]]> text").value() ==
+TEST_CASE("Text with escaping", "[xmlpp][parser][texts]") {
+  REQUIRE(
+      parser("text&apos;s &lt;&quot;escaped&quot;&gt; &amp; quoted").value() ==
+      "text's <\"escaped\"> & quoted");
+  REQUIRE(parser("text&#32;with&#x20;spaces").value() == "text with spaces");
+  REQUIRE(parser("I &lt;3 J&#xF6;rg").value() == "I <3 Jörg");
+  REQUIRE(parser("<![CDATA[<\"Escaped's\">]]>").value() == "<\"Escaped's\">");
+  REQUIRE(parser("between <![CDATA[<\"Escaped\">]]> text").value() ==
           "between <\"Escaped\"> text");
 }
 
-TEST_CASE("Xml declartion", "[xmlpp][sax][declaration]") {
-  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?><root/>").value() ==
+TEST_CASE("Xml declartion", "[xmlpp][parser][declaration]") {
+  REQUIRE(parser("<?xml version='1.0' encoding='UTF-8'?><root/>").value() ==
           "root");
-  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?>text").value() == "text");
-  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?>text").encoding() ==
+  REQUIRE(parser("<?xml version='1.0' encoding='UTF-8'?>text").value() ==
+          "text");
+  REQUIRE(parser("<?xml version='1.0' encoding='UTF-8'?>text").encoding() ==
           "UTF-8");
-  REQUIRE(sax("<?xml version='1.0' encoding='UTF-8'?>text").version() == "1.0");
-  REQUIRE(sax("<?xml version='1.1' encoding='UTF-8'?>text").version() == "1.1");
+  REQUIRE(parser("<?xml version='1.0' encoding='UTF-8'?>text").version() ==
+          "1.0");
+  REQUIRE(parser("<?xml version='1.1' encoding='UTF-8'?>text").version() ==
+          "1.1");
 }
 
 // TODO: filters
