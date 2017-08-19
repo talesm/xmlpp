@@ -1,0 +1,24 @@
+language: cpp
+addons:
+  apt:
+    sources:
+      - george-edison55-precise-backports
+    packages:
+      - cmake-data
+      - cmake
+      - gcc-6
+      - g++-6
+compiler:
+  - gcc
+  - clang
+
+before_script:
+  - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
+  - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
+  - gcc -v && g++ -v && cmake --version
+
+script: 
+  - mkdir build/ && cd build/
+  - cmake ../
+  - make
+  - ctest
