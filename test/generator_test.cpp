@@ -35,7 +35,23 @@ TEST_CASE("Generator Basics", "[xmlpp][basics]") {
   SECTION("Tag With Sub tags") {
     auto tRoot = g.rootTag("root");
     tRoot.addTag("subTag").close();
+    tRoot.addTag("otherTag"); // auto closing
     tRoot.close();
-    REQUIRE(buffer == RESULT_STR("<root><subTag/></root>"));
+    REQUIRE(buffer == RESULT_STR("<root><subTag/><otherTag/></root>"));
+  }
+  SECTION("Text") {
+    auto tRoot = g.rootTag("root");
+    tRoot.addText("Some random text");
+    tRoot.close();
+    REQUIRE(buffer == RESULT_STR("<root>Some random text</root>"));
+  }
+  SECTION("Escaped text") {
+    auto tRoot = g.rootTag("root");
+    tRoot.addText("Some <random> text \n&scaped\1\x19");
+    tRoot.close();
+    REQUIRE(
+        buffer ==
+        RESULT_STR(
+            "<root>Some &lt;random&gt; text \n&amp;scaped&#x01;&#x19;</root>"));
   }
 }
