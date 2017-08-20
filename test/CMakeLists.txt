@@ -1,6 +1,7 @@
 
 add_executable(xmlpp_test
     catch
+    generator_test
     parser_test
 )
 
