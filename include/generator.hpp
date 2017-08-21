@@ -5,6 +5,10 @@
 #include <string>
 
 namespace xmlpp {
+
+class generator_error : public std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
 /**
  * Safely write a string.
  */
@@ -36,6 +40,14 @@ public:
    * @brief Adds parameter
    */
   void addParameter(const char *name, const char *value) {
+    if (!m_open) {
+      throw generator_error("Can not add descedant to a closed tag");
+    }
+    if (m_descedants) {
+      using namespace std;
+      throw generator_error("Can not create parameter '"s + name +
+                            "' because the tag already wrote a descedant.");
+    }
     // TODO Sanitize name
     writeText(" ");
     writeText(name);
@@ -132,6 +144,9 @@ public:
 
 private:
   void checkDescendants() {
+    if (!m_open) {
+      throw generator_error("Can not add descedant to a closed tag");
+    }
     if (!m_descedants) {
       m_descedants = true;
       writeText(">");
@@ -198,7 +213,7 @@ inline char *writeWord(char *it, const char *limit, const char *wordBeg,
                        const char *wordEnd) {
   size_t bufSize = wordEnd - wordBeg;
   if (it + bufSize >= limit) {
-    throw std::runtime_error("Word too big.");
+    throw generator_error("Word too big.");
   }
   memcpy(it, wordBeg, bufSize);
   it += bufSize;
@@ -209,7 +224,7 @@ inline char *writeWord(char *it, const char *limit, const char *wordBeg,
 inline char *writeText(char *it, const char *limit, const char *text) {
   size_t bufSize = strlen(text);
   if (it + bufSize >= limit) {
-    throw std::runtime_error("Word too big.");
+    throw generator_error("Word too big.");
   }
   memcpy(it, text, bufSize + 1);
   return it + bufSize;

@@ -9,7 +9,7 @@ constexpr size_t TEST_BUF_SIZE = 1024;
 
 #define RESULT_STR(str) "<?xml version='1.0' encoding='UTF-8'?>" str##s
 
-TEST_CASE("Generator Basics", "[xmlpp][basics]") {
+TEST_CASE("Generator Basics", "[xmlpp][generator][basics]") {
   char buffer[TEST_BUF_SIZE];
   generator g(buffer, TEST_BUF_SIZE);
   SECTION("Empty TAG") {
@@ -59,5 +59,32 @@ TEST_CASE("Generator Basics", "[xmlpp][basics]") {
     tRoot.addComment("Some <random> comment");
     tRoot.close();
     REQUIRE(buffer == RESULT_STR("<root><!--Some <random> comment--></root>"));
+  }
+}
+
+TEST_CASE("Generator Errors", "[xmlpp][generator][errors]") {
+  char buffer[TEST_BUF_SIZE];
+
+  SECTION("Too small buffer") {
+    REQUIRE_THROWS_AS(generator(buffer, 1).rootTag("r").close(),
+                      generator_error);
+  }
+  generator g(buffer, TEST_BUF_SIZE);
+
+  SECTION("Parameters after first descendant") {
+    auto rootTag = g.rootTag("root");
+    rootTag.addText("Hi");
+    REQUIRE_THROWS(rootTag.addParameter("error", "error"));
+  }
+
+  SECTION("Add descedant on a closed tag") {
+    auto rootTag = g.rootTag("root");
+    auto branchTag = g.rootTag("branch");
+    rootTag.close();
+    REQUIRE_THROWS(rootTag.addText("Hi"));
+    REQUIRE_THROWS(rootTag.addTag("Hi"));
+    REQUIRE_THROWS(rootTag.addComment("Hi"));
+    // REQUIRE_THROWS(rootTag.addText("Hi")); TODO: Validate children when
+    // parent closed.
   }
 }
