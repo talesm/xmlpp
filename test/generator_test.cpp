@@ -54,4 +54,10 @@ TEST_CASE("Generator Basics", "[xmlpp][basics]") {
         RESULT_STR(
             "<root>Some &lt;random&gt; text \n&amp;scaped&#x01;&#x19;</root>"));
   }
+  SECTION("Comments") {
+    auto tRoot = g.rootTag("root");
+    tRoot.addComment("Some <random> comment");
+    tRoot.close();
+    REQUIRE(buffer == RESULT_STR("<root><!--Some <random> comment--></root>"));
+  }
 }

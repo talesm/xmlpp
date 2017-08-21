@@ -123,6 +123,13 @@ public:
     writeText(beg);
   }
 
+  void addComment(const char *comment) {
+    checkDescendants();
+    writeText("<!--");
+    writeText(comment); // TODO check for --
+    writeText("-->");
+  }
+
 private:
   void checkDescendants() {
     if (!m_descedants) {
