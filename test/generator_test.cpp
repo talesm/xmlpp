@@ -79,12 +79,17 @@ TEST_CASE("Generator Errors", "[xmlpp][generator][errors]") {
 
   SECTION("Add descedant on a closed tag") {
     auto rootTag = g.rootTag("root");
-    auto branchTag = g.rootTag("branch");
+    auto branchTag = rootTag.addTag("branch");
     rootTag.close();
     REQUIRE_THROWS(rootTag.addText("Hi"));
     REQUIRE_THROWS(rootTag.addTag("Hi"));
     REQUIRE_THROWS(rootTag.addComment("Hi"));
-    // REQUIRE_THROWS(rootTag.addText("Hi")); TODO: Validate children when
+    REQUIRE_THROWS(branchTag.addText("Hi")); // TODO: Validate children when
     // parent closed.
+  }
+
+  SECTION("Check no double rootTag") {
+    auto rootTag = g.rootTag("root");
+    REQUIRE_THROWS(g.rootTag("root2"));
   }
 }

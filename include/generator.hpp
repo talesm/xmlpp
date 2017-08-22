@@ -23,16 +23,37 @@ char *writeWord(char *it, const char *limit, const char *wordBeg,
  */
 class TagGenerator {
 public:
-  TagGenerator(char *&current, const char *name, const char *limit)
-      : m_current(current), m_limit(limit), m_name(name) {
+  TagGenerator(char *&current, const char *name, const char *limit,
+               TagGenerator *parent = nullptr)
+      : m_current(current), m_limit(limit), m_name(name), m_parent(parent) {
+    if (m_parent) {
+      m_parent->m_lastOpenChild = this;
+    }
     writeText("<");
     writeText(name);
   }
 
   TagGenerator(const TagGenerator &) = delete;
-  TagGenerator(TagGenerator &&) = default;
   TagGenerator &operator=(const TagGenerator &) = delete;
-  TagGenerator &operator=(TagGenerator &&) = default;
+  TagGenerator(TagGenerator &&rhs)
+      : m_current(rhs.m_current), m_limit(rhs.m_limit), m_name(rhs.m_name),
+        m_descedants(rhs.m_descedants), m_open(rhs.m_open),
+        m_parent(rhs.m_parent), m_lastOpenChild(rhs.m_lastOpenChild) {
+    rhs.m_open = false;
+    if (m_descedants) {
+      if (m_lastOpenChild) {
+        m_lastOpenChild->m_parent = this;
+      }
+    }
+    if (m_parent && m_parent->m_lastOpenChild == &rhs) {
+      m_parent->m_lastOpenChild = this;
+    }
+  }
+  TagGenerator &operator=(TagGenerator &&rhs) {
+    close();
+    new (this) TagGenerator(std::move(rhs));
+    return *this;
+  }
 
   ~TagGenerator() { close(); }
 
@@ -65,11 +86,16 @@ public:
       return;
     }
     if (m_descedants) {
+      checkSubTagClosed();
+
       writeText("</");
       writeText(m_name.c_str());
       writeText(">");
     } else {
       writeText("/>");
+    }
+    if (m_parent) {
+      m_parent->m_lastOpenChild = nullptr;
     }
     m_open = false;
   }
@@ -79,7 +105,7 @@ public:
    */
   TagGenerator addTag(const char *name) {
     checkDescendants();
-    return TagGenerator{m_current, name, m_limit};
+    return TagGenerator{m_current, name, m_limit, this};
   }
 
   /**
@@ -151,6 +177,13 @@ private:
       m_descedants = true;
       writeText(">");
     }
+    checkSubTagClosed();
+  }
+
+  void checkSubTagClosed() {
+    if (m_lastOpenChild) {
+      m_lastOpenChild->close();
+    }
   }
 
   void writeText(const char *text) {
@@ -166,6 +199,8 @@ private:
   std::string m_name;
   bool m_descedants = false;
   bool m_open = true;
+  TagGenerator *m_parent;
+  TagGenerator *m_lastOpenChild = nullptr;
 };
 
 /**
@@ -177,6 +212,10 @@ public:
       : m_current(buffer), m_limit(buffer + buffer_size) {}
 
   TagGenerator rootTag(const char *name) {
+    if (m_root) {
+      throw generator_error("Already wrote root");
+    }
+    m_root = true;
     writeHeader();
     return TagGenerator{m_current, name, m_limit};
   }
@@ -207,6 +246,7 @@ private:
   const char *m_limit;
   std::string m_version;
   std::string m_encoding;
+  bool m_root = false;
 };
 
 inline char *writeWord(char *it, const char *limit, const char *wordBeg,
