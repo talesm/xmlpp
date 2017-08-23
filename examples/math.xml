@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<math>
+    <value>12</value>
+    <add>
+        <value>8</value>
+        <value>4</value>
+    </add>
+    <mul>
+        <value>2</value>
+        <add>
+            <value>2</value>
+            <mul>
+                <value>2</value>
+                <value>2</value>
+            </mul>
+        </add>
+    </mul>
+</math>
