@@ -25,7 +25,7 @@ void
 eval(const string& buffer)
 {
   using namespace xmlpp;
-  parser p(buffer.c_str());
+  Parser p(buffer.c_str());
   if (p.type() != entity_type::TAG || p.value() != "math") {
     throw runtime_error("Invalid formula");
   }

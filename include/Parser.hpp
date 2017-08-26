@@ -25,14 +25,14 @@ enum class entity_type
  * time you call next() (or operator++()) it will advance to next
  * entity, in a Depth first approach.
  */
-class parser
+class Parser
 {
 public:
   static constexpr const char* BLANKS = " \t\n\r";
   /**
    * @brief constructor that takes a c-string with the content.
    */
-  parser(const char* code)
+  Parser(const char* code)
   {
     m_code = code;
     next();
@@ -70,13 +70,13 @@ public:
     return true;
   }
 
-  parser& operator++()
+  Parser& operator++()
   {
     next();
     return *this;
   }
 
-  parser operator++(int)
+  Parser operator++(int)
   {
     auto temp = *this;
     next();
@@ -172,15 +172,15 @@ private:
       }
     } else {
       if (m_tagStack.top() != m_value) {
-        throw parser_error("Tag mismatch, opened with: " + m_tagStack.top() +
-                           ", but closed with: " + m_value);
+        throw ParserError("Tag mismatch, opened with: " + m_tagStack.top() +
+                          ", but closed with: " + m_value);
       }
       m_tagStack.pop();
     }
     if (*m_code == '>') {
       ++m_code;
     } else {
-      throw parser_error("Unclosed tag.");
+      throw ParserError("Unclosed tag.");
     }
   }
 
@@ -203,7 +203,7 @@ private:
       } else
         level = 0;
     }
-    throw parser_error("Expected '-->' before end of the buffer");
+    throw ParserError("Expected '-->' before end of the buffer");
   }
 
   void nextText()
@@ -233,8 +233,8 @@ private:
   void nextDeclaration()
   {
     if (m_initialized) {
-      throw parser_error("Invalid declaration or using processor "
-                         "instruction, which aren't currently implemented.");
+      throw ParserError("Invalid declaration or using processor "
+                        "instruction, which aren't currently implemented.");
     }
     assert(*m_code++ == '<');
     assert(*m_code++ == '?');
@@ -245,7 +245,7 @@ private:
     if (m_params.count("encoding")) {
       auto encoding = m_params["encoding"];
       if (encoding != "UTF-8") {
-        throw parser_error("Invalid encoding:" + encoding);
+        throw ParserError("Invalid encoding:" + encoding);
       }
     }
     if (m_params.count("version")) {
@@ -347,14 +347,14 @@ private:
       }
       if (*m_code == '=' || strchr(BLANKS, *m_code)) {
         if (m_code == pname_beg) {
-          throw parser_error(
+          throw ParserError(
             "Invalid Parameter. A name is expected before the '='");
         }
         pname.assign(pname_beg, m_code);
         goto PARAM_VALUE;
       }
     }
-    throw parser_error("Expected close tag or parameter definition");
+    throw ParserError("Expected close tag or parameter definition");
   PARAM_VALUE:
     ignoreBlanks();
     if (*m_code != '=') {
@@ -364,17 +364,17 @@ private:
     ++m_code;
     ignoreBlanks();
     if (!strchr("\"\'", *m_code)) {
-      throw parser_error("Invalid Parameter '" + pname +
-                         "'. The parameter value must be "
-                         "surrounded by \' or \", we got: '" +
-                         *m_code + "'");
+      throw ParserError("Invalid Parameter '" + pname +
+                        "'. The parameter value must be "
+                        "surrounded by \' or \", we got: '" +
+                        *m_code + "'");
     }
     char endToken   = *m_code++;
     auto pvalue_beg = m_code++;
     m_params[pname].clear();
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>') {
-        throw parser_error("Expected a \' or \" before <");
+        throw ParserError("Expected a \' or \" before <");
       }
       if (*m_code == '&') {
         m_params[pname].append(pvalue_beg, m_code);
@@ -387,7 +387,7 @@ private:
         goto PARAM_NAME;
       }
     }
-    throw parser_error("Unclosed parameter value");
+    throw ParserError("Unclosed parameter value");
   }
 
   void expect(char expected)
@@ -396,8 +396,8 @@ private:
       ++m_code;
     } else {
       using namespace std;
-      throw parser_error("Expected char '"s + expected + "', got '" + *m_code +
-                         "'.");
+      throw ParserError("Expected char '"s + expected + "', got '" + *m_code +
+                        "'.");
     }
   }
 
