@@ -7,50 +7,50 @@
 
 using namespace std;
 
-string readfile(const char* file);
-void eval(const string& buffer);
+string ReadFile(const char* aFile);
+void Eval(const string& aBuffer);
 
 int
 main()
 {
-  auto buffer = readfile(XMLPP_DIR "/examples/math.xml");
+  auto buffer = ReadFile(XMLPP_DIR "/examples/math.xml");
   cout << "Read buffer:" << endl;
   cout << buffer << endl << endl;
   cout << "Evals to: " << endl;
-  eval(buffer);
+  Eval(buffer);
   return 0;
 }
 
 void
-eval(const string& buffer)
+Eval(const string& aBuffer)
 {
   using namespace xmlpp;
-  Parser p(buffer.c_str());
-  if (p.type() != entity_type::TAG || p.value() != "math") {
+  Parser p(aBuffer.c_str());
+  if (p.Type() != EntityType::TAG || p.Value() != "math") {
     throw runtime_error("Invalid formula");
   }
   stack<char>   ops;
   stack<double> vls;
   int           count = 0;
-  while (p.next() && p.value() != "math") {
-    switch (p.type()) {
-      case entity_type::COMMENT:
+  while (p.Next() && p.Value() != "math") {
+    switch (p.Type()) {
+      case EntityType::COMMENT:
         break;
-      case entity_type::TAG:
-        if (p.value() == "value") {
+      case EntityType::TAG:
+        if (p.Value() == "value") {
           ops.push('v');
           vls.push(0);
-        } else if (p.value() == "add") {
+        } else if (p.Value() == "add") {
           ops.push('a');
           vls.push(0);
-        } else if (p.value() == "mul") {
+        } else if (p.Value() == "mul") {
           ops.push('m');
           vls.push(1);
         } else {
           throw runtime_error("Invalid tag");
         }
         break;
-      case entity_type::TAG_ENDING: {
+      case EntityType::TAG_ENDING: {
         ops.pop();
         double curValue = vls.top();
         vls.pop();
@@ -74,25 +74,25 @@ eval(const string& buffer)
         }
         break;
       }
-      case entity_type::TEXT:
+      case EntityType::TEXT:
         if (ops.top() == 'v') {
-          vls.top() = stod(p.value());
+          vls.top() = stod(p.Value());
         } else {
           throw runtime_error("Values should be encolsed by <value></value>");
         }
         break;
     }
   }
-  if (p.type() != entity_type::TAG_ENDING || p.value() != "math") {
+  if (p.Type() != EntityType::TAG_ENDING || p.Value() != "math") {
     throw runtime_error("Invalid formula");
   }
 }
 
 inline string
-readfile(const char* file)
+ReadFile(const char* aFile)
 {
   string   buffer;
-  ifstream input(file);
+  ifstream input(aFile);
   string   line;
   while (getline(input, line)) {
     buffer += line + '\n';

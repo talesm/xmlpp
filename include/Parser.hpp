@@ -7,10 +7,17 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
-#include "ParserError.hpp"
 
 namespace xmlpp {
-enum class entity_type
+/**
+ * @brief An error in parsing the XML.
+ */
+class ParserError : public std::runtime_error
+{
+  using std::runtime_error::runtime_error;
+};
+
+enum class EntityType
 {
   TAG,
   TAG_ENDING,
@@ -32,61 +39,61 @@ public:
   /**
    * @brief constructor that takes a c-string with the content.
    */
-  Parser(const char* code)
+  Parser(const char* aCode)
   {
-    m_code = code;
-    next();
+    mCode = aCode;
+    Next();
   }
 
-  bool next()
+  bool Next()
   {
     using namespace std;
-    if (m_singletag) {
-      m_type      = entity_type::TAG_ENDING;
-      m_singletag = false;
+    if (mSingletag) {
+      mType      = EntityType::TAG_ENDING;
+      mSingletag = false;
       return true;
     }
-    if (*m_code == 0) {
+    if (*mCode == 0) {
       return false;
     }
-    auto space = ignoreBlanks();
-    if (*m_code == '<') {
-      if (*(m_code + 1) == '!') {
-        if (*(m_code + 2) == '-') {
-          nextComment();
-        } else if (*(m_code + 2) == '[') {
-          nextText();
+    auto space = IgnoreBlanks();
+    if (*mCode == '<') {
+      if (*(mCode + 1) == '!') {
+        if (*(mCode + 2) == '-') {
+          NextComment();
+        } else if (*(mCode + 2) == '[') {
+          NextText();
         }
-      } else if (*(m_code + 1) == '?') {
-        nextDeclaration();
-        return next();
+      } else if (*(mCode + 1) == '?') {
+        NextDeclaration();
+        return Next();
       } else {
-        nextTag();
+        NextTag();
       }
     } else {
-      m_code -= space;
-      nextText();
+      mCode -= space;
+      NextText();
     }
     return true;
   }
 
   Parser& operator++()
   {
-    next();
+    Next();
     return *this;
   }
 
   Parser operator++(int)
   {
     auto temp = *this;
-    next();
+    Next();
     return temp;
   }
 
   /**
    * @brief returns the type of the current node.
    */
-  entity_type type() const { return m_type; }
+  EntityType Type() const { return mType; }
 
   /**
    * @brief Returns the value of the current node.
@@ -96,7 +103,7 @@ public:
    * | ------ | ------------------------------------------ |
    * | tag    | the name of tag ("<root/>"'s name is root) |
    */
-  const std::string& value() const { return m_value; }
+  const std::string& Value() const { return mValue; }
 
   /**
    * @brief the type of the parameters map.
@@ -106,21 +113,21 @@ public:
    * We guaranteed that it defines an iterator, the operator[], the begin(),
    * end(), count() and size() and is able to be used with range-for.
    */
-  using params_map = std::unordered_map<std::string, std::string>;
+  using ParamsMap = std::unordered_map<std::string, std::string>;
 
   /**
    * @brief Return the current parameters.
    *
    * The reference is valid until the next call of next() or operator++().
    */
-  const params_map& params() const { return m_params; }
+  const ParamsMap& Parameters() const { return mParams; }
 
   /**
    * @brief Return the document's encoding.
    *
    *  Currently it always will return "UTF-8"
    */
-  const std::string encoding() const { return "UTF-8"; }
+  const std::string Encoding() const { return "UTF-8"; }
 
   /**
    * @brief Return the document's xml version.
@@ -130,75 +137,75 @@ public:
 
    * In the future different behaviour can be enabled for different versions.
    */
-  const std::string& version() const { return m_version; }
+  const std::string& Version() const { return mVersion; }
 
 private:
-  const char*             m_code;
-  entity_type             m_type;
-  std::string             m_value;
-  params_map              m_params;
-  bool                    m_singletag   = false;
-  bool                    m_initialized = false;
-  std::string             m_version     = "1.0";
-  std::stack<std::string> m_tagStack;
+  const char*             mCode;
+  EntityType              mType;
+  std::string             mValue;
+  ParamsMap               mParams;
+  bool                    mSingletag   = false;
+  bool                    mInitialized = false;
+  std::string             mVersion     = "1.0";
+  std::stack<std::string> mTagStack;
 
 private:
-  void nextTag()
+  void NextTag()
   {
     using namespace std;
-    assert(*m_code == '<');
-    auto tag_beg = ++m_code;
+    assert(*mCode == '<');
+    auto tag_beg = ++mCode;
     bool closing = false;
-    if (*m_code == '/') {
+    if (*mCode == '/') {
       closing = true;
-      tag_beg = ++m_code;
-      m_type  = entity_type::TAG_ENDING;
+      tag_beg = ++mCode;
+      mType   = EntityType::TAG_ENDING;
     } else {
-      m_type = entity_type::TAG;
+      mType = EntityType::TAG;
     }
-    for (; *m_code != 0; ++m_code) {
-      if (strchr(BLANKS, *m_code) || *m_code == '>' || *m_code == '/') {
-        m_value.assign(tag_beg, m_code);
-        parameters();
+    for (; *mCode != 0; ++mCode) {
+      if (strchr(BLANKS, *mCode) || *mCode == '>' || *mCode == '/') {
+        mValue.assign(tag_beg, mCode);
+        ReadParameters();
         break;
       }
     }
-    if (m_type == entity_type::TAG) {
-      if (*m_code == '/') {
-        ++m_code;
-        m_singletag = true;
+    if (mType == EntityType::TAG) {
+      if (*mCode == '/') {
+        ++mCode;
+        mSingletag = true;
       } else {
-        m_tagStack.push(m_value);
+        mTagStack.push(mValue);
       }
     } else {
-      if (m_tagStack.top() != m_value) {
-        throw ParserError("Tag mismatch, opened with: " + m_tagStack.top() +
-                          ", but closed with: " + m_value);
+      if (mTagStack.top() != mValue) {
+        throw ParserError("Tag mismatch, opened with: " + mTagStack.top() +
+                          ", but closed with: " + mValue);
       }
-      m_tagStack.pop();
+      mTagStack.pop();
     }
-    if (*m_code == '>') {
-      ++m_code;
+    if (*mCode == '>') {
+      ++mCode;
     } else {
       throw ParserError("Unclosed tag.");
     }
   }
 
-  void nextComment()
+  void NextComment()
   {
-    assert(*m_code++ == '<');
-    assert(*m_code++ == '!');
-    expect('-');
-    expect('-');
-    auto   comment_beg = m_code;
+    assert(*mCode++ == '<');
+    assert(*mCode++ == '!');
+    Expect('-');
+    Expect('-');
+    auto   comment_beg = mCode;
     size_t level       = 0;
-    for (; *m_code != 0; ++m_code) {
-      if (*m_code == '-')
+    for (; *mCode != 0; ++mCode) {
+      if (*mCode == '-')
         ++level;
-      else if (*m_code == '>' && level >= 2) {
-        m_type = entity_type::COMMENT;
-        m_value.assign(comment_beg, m_code - 2);
-        ++m_code;
+      else if (*mCode == '>' && level >= 2) {
+        mType = EntityType::COMMENT;
+        mValue.assign(comment_beg, mCode - 2);
+        ++mCode;
         return;
       } else
         level = 0;
@@ -206,90 +213,90 @@ private:
     throw ParserError("Expected '-->' before end of the buffer");
   }
 
-  void nextText()
+  void NextText()
   {
-    auto text_beg = m_code;
-    m_value.clear();
-    for (; *m_code != 0; ++m_code) {
-      if (*m_code == '<') {
-        if (*(m_code + 1) == '!' && *(m_code + 2) == '[') {
-          m_value.append(text_beg, m_code);
-          m_value.append(cdataSequence());
-          text_beg = m_code--;
+    auto text_beg = mCode;
+    mValue.clear();
+    for (; *mCode != 0; ++mCode) {
+      if (*mCode == '<') {
+        if (*(mCode + 1) == '!' && *(mCode + 2) == '[') {
+          mValue.append(text_beg, mCode);
+          mValue.append(CdataSequence());
+          text_beg = mCode--;
         } else {
           break;
         }
       }
-      if (*m_code == '&') {
-        m_value.append(text_beg, m_code);
-        m_value.append(escapeSequence());
-        text_beg = m_code--;
+      if (*mCode == '&') {
+        mValue.append(text_beg, mCode);
+        mValue.append(EscapeSequence());
+        text_beg = mCode--;
       }
     }
-    m_type = entity_type::TEXT;
-    m_value.append(text_beg, m_code);
+    mType = EntityType::TEXT;
+    mValue.append(text_beg, mCode);
   }
 
-  void nextDeclaration()
+  void NextDeclaration()
   {
-    if (m_initialized) {
+    if (mInitialized) {
       throw ParserError("Invalid declaration or using processor "
                         "instruction, which aren't currently implemented.");
     }
-    assert(*m_code++ == '<');
-    assert(*m_code++ == '?');
-    expect('x');
-    expect('m');
-    expect('l');
-    parameters();
-    if (m_params.count("encoding")) {
-      auto encoding = m_params["encoding"];
+    assert(*mCode++ == '<');
+    assert(*mCode++ == '?');
+    Expect('x');
+    Expect('m');
+    Expect('l');
+    ReadParameters();
+    if (mParams.count("encoding")) {
+      auto encoding = mParams["encoding"];
       if (encoding != "UTF-8") {
         throw ParserError("Invalid encoding:" + encoding);
       }
     }
-    if (m_params.count("version")) {
-      m_version = m_params["version"];
+    if (mParams.count("version")) {
+      mVersion = mParams["version"];
     }
-    expect('?');
-    expect('>');
-    m_initialized = true;
+    Expect('?');
+    Expect('>');
+    mInitialized = true;
   }
 
-  std::string cdataSequence()
+  std::string CdataSequence()
   {
     using namespace std;
-    ensure('<');
-    ensure('!');
-    ensure('[');
-    expect('C');
-    expect('D');
-    expect('A');
-    expect('T');
-    expect('A');
-    expect('[');
-    auto   cdata_beg = m_code;
+    Ensure('<');
+    Ensure('!');
+    Ensure('[');
+    Expect('C');
+    Expect('D');
+    Expect('A');
+    Expect('T');
+    Expect('A');
+    Expect('[');
+    auto   cdata_beg = mCode;
     string result;
-    for (; *m_code != 0; ++m_code) {
-      if (*m_code == ']' && *(m_code + 1) == ']' && *(m_code + 2) == '>') {
-        result.assign(cdata_beg, m_code);
+    for (; *mCode != 0; ++mCode) {
+      if (*mCode == ']' && *(mCode + 1) == ']' && *(mCode + 2) == '>') {
+        result.assign(cdata_beg, mCode);
         break;
       }
     }
-    ensure(']');
-    ensure(']');
-    ensure('>');
+    Ensure(']');
+    Ensure(']');
+    Ensure('>');
     return result;
   }
-  std::string escapeSequence()
+  std::string EscapeSequence()
   {
     using namespace std;
-    ensure('&');
-    auto escape_beg = m_code;
-    for (; *m_code != 0; ++m_code) {
-      if (*m_code == ';') {
-        std::string escape(escape_beg, m_code);
-        ensure(';');
+    Ensure('&');
+    auto escape_beg = mCode;
+    for (; *mCode != 0; ++mCode) {
+      if (*mCode == ';') {
+        std::string escape(escape_beg, mCode);
+        Ensure(';');
         if (escape[0] == '#') {
           char32_t value = 0;
           if (escape[1] == 'x') {
@@ -332,88 +339,89 @@ private:
         return escapeMapping[escape];
       }
     }
+    throw ParserError("Invalid Escape Sequence");
   }
 
-  void parameters()
+  void ReadParameters()
   {
     using namespace std;
   PARAM_NAME:
-    ignoreBlanks();
+    IgnoreBlanks();
     string pname     = "";
-    auto   pname_beg = m_code;
-    for (; *m_code != 0; ++m_code) {
-      if (*m_code == '>' || *m_code == '/' || *m_code == '?') {
+    auto   pname_beg = mCode;
+    for (; *mCode != 0; ++mCode) {
+      if (*mCode == '>' || *mCode == '/' || *mCode == '?') {
         return;
       }
-      if (*m_code == '=' || strchr(BLANKS, *m_code)) {
-        if (m_code == pname_beg) {
+      if (*mCode == '=' || strchr(BLANKS, *mCode)) {
+        if (mCode == pname_beg) {
           throw ParserError(
             "Invalid Parameter. A name is expected before the '='");
         }
-        pname.assign(pname_beg, m_code);
+        pname.assign(pname_beg, mCode);
         goto PARAM_VALUE;
       }
     }
     throw ParserError("Expected close tag or parameter definition");
   PARAM_VALUE:
-    ignoreBlanks();
-    if (*m_code != '=') {
-      m_params[pname] = pname;
+    IgnoreBlanks();
+    if (*mCode != '=') {
+      mParams[pname] = pname;
       goto PARAM_NAME;
     }
-    ++m_code;
-    ignoreBlanks();
-    if (!strchr("\"\'", *m_code)) {
+    ++mCode;
+    IgnoreBlanks();
+    if (!strchr("\"\'", *mCode)) {
       throw ParserError("Invalid Parameter '" + pname +
                         "'. The parameter value must be "
                         "surrounded by \' or \", we got: '" +
-                        *m_code + "'");
+                        *mCode + "'");
     }
-    char endToken   = *m_code++;
-    auto pvalue_beg = m_code++;
-    m_params[pname].clear();
-    for (; *m_code != 0; ++m_code) {
-      if (*m_code == '>') {
+    char endToken   = *mCode++;
+    auto pvalue_beg = mCode++;
+    mParams[pname].clear();
+    for (; *mCode != 0; ++mCode) {
+      if (*mCode == '>') {
         throw ParserError("Expected a \' or \" before <");
       }
-      if (*m_code == '&') {
-        m_params[pname].append(pvalue_beg, m_code);
-        m_params[pname].append(escapeSequence());
-        pvalue_beg = m_code--;
+      if (*mCode == '&') {
+        mParams[pname].append(pvalue_beg, mCode);
+        mParams[pname].append(EscapeSequence());
+        pvalue_beg = mCode--;
       }
-      if (*m_code == endToken) {
-        m_params[pname].append(pvalue_beg, m_code);
-        ++m_code;
+      if (*mCode == endToken) {
+        mParams[pname].append(pvalue_beg, mCode);
+        ++mCode;
         goto PARAM_NAME;
       }
     }
     throw ParserError("Unclosed parameter value");
   }
 
-  void expect(char expected)
+  void Expect(char aExpected)
   {
-    if (*m_code == expected) {
-      ++m_code;
+    if (*mCode == aExpected) {
+      ++mCode;
     } else {
       using namespace std;
-      throw ParserError("Expected char '"s + expected + "', got '" + *m_code +
+      throw ParserError("Expected char '"s + aExpected + "', got '" + *mCode +
                         "'.");
     }
   }
 
-  void ensure(char expected)
+  void Ensure(char aExpected)
   {
-    assert(*m_code == expected);
-    ++m_code;
+    assert(*mCode == aExpected);
+    ++mCode;
   }
 
-  size_t ignoreBlanks()
+  size_t IgnoreBlanks()
   {
-    auto initial = m_code;
-    while (strchr(BLANKS, *m_code)) {
-      ++m_code;
+    auto initial = mCode;
+    while (strchr(BLANKS, *mCode)) {
+      ++mCode;
     }
-    return m_code - initial;
+    return mCode - initial;
   }
 };
 }

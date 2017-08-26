@@ -6,149 +6,148 @@
 
 namespace xmlpp {
 
-class generator_error : public std::runtime_error
+class GeneratorError : public std::runtime_error
 {
   using std::runtime_error::runtime_error;
 };
 /**
  * Safely write a string.
  */
-char* writeText(char* it, const char* limit, const char* text);
+char* WriteText(char* aIterator, const char* aLimit, const char* aText);
 /**
  * Safely write a word.
  */
-char* writeWord(char*       it,
-                const char* limit,
-                const char* wordBeg,
-                const char* wordEnd);
+char* WriteWord(char*       aIterator,
+                const char* aLimit,
+                const char* aWordBeg,
+                const char* aWordEnd);
 /**
  * Represents a tag.
  */
 class TagGenerator
 {
 public:
-  TagGenerator(char*&        current,
-               const char*   name,
-               const char*   limit,
-               TagGenerator* parent = nullptr)
-    : m_current(current)
-    , m_limit(limit)
-    , m_name(name)
-    , m_parent(parent)
+  TagGenerator(char*&        aCurrent,
+               const char*   aName,
+               const char*   aLimit,
+               TagGenerator* aParent = nullptr)
+    : mCurrent(aCurrent)
+    , mLimit(aLimit)
+    , mName(aName)
+    , mParent(aParent)
   {
-    if (m_parent) {
-      m_parent->m_lastOpenChild = this;
+    if (mParent) {
+      mParent->mLastOpenChild = this;
     }
-    writeText("<");
-    writeText(name);
+    mWriteText("<");
+    mWriteText(aName);
   }
 
   TagGenerator(const TagGenerator&) = delete;
   TagGenerator& operator=(const TagGenerator&) = delete;
-  TagGenerator(TagGenerator&& rhs)
-    : m_current(rhs.m_current)
-    , m_limit(rhs.m_limit)
-    , m_name(rhs.m_name)
-    , m_descedants(rhs.m_descedants)
-    , m_open(rhs.m_open)
-    , m_parent(rhs.m_parent)
-    , m_lastOpenChild(rhs.m_lastOpenChild)
+  TagGenerator(TagGenerator&& aSource)
+    : mCurrent(aSource.mCurrent)
+    , mLimit(aSource.mLimit)
+    , mName(aSource.mName)
+    , mDescedants(aSource.mDescedants)
+    , mOpen(aSource.mOpen)
+    , mParent(aSource.mParent)
+    , mLastOpenChild(aSource.mLastOpenChild)
   {
-    rhs.m_open = false;
-    if (m_descedants) {
-      if (m_lastOpenChild) {
-        m_lastOpenChild->m_parent = this;
+    aSource.mOpen = false;
+    if (mDescedants) {
+      if (mLastOpenChild) {
+        mLastOpenChild->mParent = this;
       }
     }
-    if (m_parent && m_parent->m_lastOpenChild == &rhs) {
-      m_parent->m_lastOpenChild = this;
+    if (mParent && mParent->mLastOpenChild == &aSource) {
+      mParent->mLastOpenChild = this;
     }
   }
   TagGenerator& operator=(TagGenerator&& rhs)
   {
-    close();
+    Close();
     new (this) TagGenerator(std::move(rhs));
     return *this;
   }
 
-  ~TagGenerator() { close(); }
+  ~TagGenerator() { Close(); }
 
   /**
    * @brief Adds parameter
    */
-  void addParameter(const char* name, const char* value)
+  void AddParameter(const char* aName, const char* aValue)
   {
-    if (!m_open) {
-      throw generator_error("Can not add descedant to a closed tag");
+    if (!mOpen) {
+      throw GeneratorError("Can not add descedant to a closed tag");
     }
-    if (m_descedants) {
-      using namespace std;
-      throw generator_error("Can not create parameter '"s + name +
-                            "' because the tag already wrote a descedant.");
+    if (mDescedants) {
+      throw GeneratorError(std::string("Can not create parameter '") + aName +
+                           "' because the tag already wrote a descedant.");
     }
     // TODO Sanitize name
-    writeText(" ");
-    writeText(name);
-    writeText("='");
+    mWriteText(" ");
+    mWriteText(aName);
+    mWriteText("='");
     // TODO Escape value
-    writeText(value);
-    writeText("'");
+    mWriteText(aValue);
+    mWriteText("'");
   }
 
   /**
    * @brief Flushes and write contents
    */
-  void close()
+  void Close()
   {
-    if (!m_open) {
+    if (!mOpen) {
       return;
     }
-    if (m_descedants) {
-      checkSubTagClosed();
+    if (mDescedants) {
+      mCheckSubTagClosed();
 
-      writeText("</");
-      writeText(m_name.c_str());
-      writeText(">");
+      mWriteText("</");
+      mWriteText(mName.c_str());
+      mWriteText(">");
     } else {
-      writeText("/>");
+      mWriteText("/>");
     }
-    if (m_parent) {
-      m_parent->m_lastOpenChild = nullptr;
+    if (mParent) {
+      mParent->mLastOpenChild = nullptr;
     }
-    m_open = false;
+    mOpen = false;
   }
 
   /**
    * @brief Adds a (sub)tag
    */
-  TagGenerator addTag(const char* name)
+  TagGenerator AddTag(const char* aName)
   {
-    checkDescendants();
-    return TagGenerator{m_current, name, m_limit, this};
+    mCheckDescendants();
+    return TagGenerator{mCurrent, aName, mLimit, this};
   }
 
   /**
    * @brief Adds a (sub)tag
    */
-  void addText(const char* text)
+  void AddText(const char* aText)
   {
-    checkDescendants();
-    auto beg = text;
-    for (auto it = text; *it != '\0'; ++it) {
+    mCheckDescendants();
+    auto beg = aText;
+    for (auto it = aText; *it != '\0'; ++it) {
       switch (*it) {
         case '<':
-          writeWord(beg, it);
-          writeText("&lt;");
+          mWriteWord(beg, it);
+          mWriteText("&lt;");
           beg = it + 1;
           break;
         case '>':
-          writeWord(beg, it);
-          writeText("&gt;");
+          mWriteWord(beg, it);
+          mWriteText("&gt;");
           beg = it + 1;
           break;
         case '&':
-          writeWord(beg, it);
-          writeText("&amp;");
+          mWriteWord(beg, it);
+          mWriteText("&amp;");
           beg = it + 1;
           break;
         case '\n':
@@ -160,7 +159,7 @@ public:
             break;
           }
           if (*it < 0x20) {
-            writeWord(beg, it);
+            mWriteWord(beg, it);
             char t[] = "&#x00;";
             if (*it >= 0x10) {
               t[3] = '1';
@@ -171,138 +170,138 @@ public:
             } else if (d != 0) {
               t[4] = 'A' + d - 0xA;
             }
-            writeText(t);
+            mWriteText(t);
             beg = it + 1;
           }
           break;
       }
     }
     // TODO check escaping.
-    writeText(beg);
+    mWriteText(beg);
   }
 
-  void addComment(const char* comment)
+  void AddComment(const char* comment)
   {
-    checkDescendants();
-    writeText("<!--");
-    writeText(comment); // TODO check for --
-    writeText("-->");
-  }
-
-private:
-  void checkDescendants()
-  {
-    if (!m_open) {
-      throw generator_error("Can not add descedant to a closed tag");
-    }
-    if (!m_descedants) {
-      m_descedants = true;
-      writeText(">");
-    }
-    checkSubTagClosed();
-  }
-
-  void checkSubTagClosed()
-  {
-    if (m_lastOpenChild) {
-      m_lastOpenChild->close();
-    }
-  }
-
-  void writeText(const char* text)
-  {
-    m_current = xmlpp::writeText(m_current, m_limit, text);
-  }
-  void writeWord(const char* beg, const char* end)
-  {
-    m_current = xmlpp::writeWord(m_current, m_limit, beg, end);
+    mCheckDescendants();
+    mWriteText("<!--");
+    mWriteText(comment); // TODO check for --
+    mWriteText("-->");
   }
 
 private:
-  char*&        m_current;
-  const char*   m_limit;
-  std::string   m_name;
-  bool          m_descedants = false;
-  bool          m_open       = true;
-  TagGenerator* m_parent;
-  TagGenerator* m_lastOpenChild = nullptr;
+  void mCheckDescendants()
+  {
+    if (!mOpen) {
+      throw GeneratorError("Can not add descedant to a closed tag");
+    }
+    if (!mDescedants) {
+      mDescedants = true;
+      mWriteText(">");
+    }
+    mCheckSubTagClosed();
+  }
+
+  void mCheckSubTagClosed()
+  {
+    if (mLastOpenChild) {
+      mLastOpenChild->Close();
+    }
+  }
+
+  void mWriteText(const char* text)
+  {
+    mCurrent = xmlpp::WriteText(mCurrent, mLimit, text);
+  }
+  void mWriteWord(const char* beg, const char* end)
+  {
+    mCurrent = xmlpp::WriteWord(mCurrent, mLimit, beg, end);
+  }
+
+private:
+  char*&        mCurrent;
+  const char*   mLimit;
+  std::string   mName;
+  bool          mDescedants = false;
+  bool          mOpen       = true;
+  TagGenerator* mParent;
+  TagGenerator* mLastOpenChild = nullptr;
 };
 
 /**
  * @brief generates markup.
  */
-class generator
+class Generator
 {
 public:
-  generator(char* buffer, size_t buffer_size)
-    : m_current(buffer)
-    , m_limit(buffer + buffer_size)
+  Generator(char* aBuffer, size_t aBufferSize)
+    : mCurrent(aBuffer)
+    , mLimit(aBuffer + aBufferSize)
   {
   }
 
-  TagGenerator rootTag(const char* name)
+  TagGenerator RootTag(const char* aName)
   {
-    if (m_root) {
-      throw generator_error("Already wrote root");
+    if (mRoot) {
+      throw GeneratorError("Already wrote root");
     }
-    m_root = true;
-    writeHeader();
-    return TagGenerator{m_current, name, m_limit};
+    mRoot = true;
+    mWriteHeader();
+    return TagGenerator{mCurrent, aName, mLimit};
   }
 
-  generator& version(const char* version)
+  Generator& Version(const char* aVersion)
   {
-    m_version = version;
+    mVersion = aVersion;
     return *this;
   }
 
-  generator& encoding(const char* encoding)
+  Generator& Encoding(const char* aEncoding)
   {
-    m_encoding = encoding;
+    mEncoding = aEncoding;
     return *this;
   }
 
 private:
-  void writeHeader()
+  void mWriteHeader()
   {
-    m_current = writeText(m_current, m_limit, "<?xml version='");
-    m_current = writeText(m_current, m_limit,
-                          m_version.size() ? m_version.c_str() : "1.0");
-    m_current = writeText(m_current, m_limit, "' encoding='");
-    m_current = writeText(m_current, m_limit,
-                          m_encoding.size() ? m_encoding.c_str() : "UTF-8");
-    m_current = writeText(m_current, m_limit, "'?>");
+    mCurrent = WriteText(mCurrent, mLimit, "<?xml version='");
+    mCurrent = WriteText(mCurrent, mLimit,
+                          mVersion.size() ? mVersion.c_str() : "1.0");
+    mCurrent = WriteText(mCurrent, mLimit, "' encoding='");
+    mCurrent = WriteText(mCurrent, mLimit,
+                          mEncoding.size() ? mEncoding.c_str() : "UTF-8");
+    mCurrent = WriteText(mCurrent, mLimit, "'?>");
   }
 
 private:
-  char*       m_current;
-  const char* m_limit;
-  std::string m_version;
-  std::string m_encoding;
-  bool        m_root = false;
+  char*       mCurrent;
+  const char* mLimit;
+  std::string mVersion;
+  std::string mEncoding;
+  bool        mRoot = false;
 };
 
 inline char*
-writeWord(char* it, const char* limit, const char* wordBeg, const char* wordEnd)
+WriteWord(char* aIterator, const char* aLimit, const char* aWordBeg, const char* aWordEnd)
 {
-  size_t bufSize = wordEnd - wordBeg;
-  if (it + bufSize >= limit) {
-    throw generator_error("Word too big.");
+  size_t bufSize = aWordEnd - aWordBeg;
+  if (aIterator + bufSize >= aLimit) {
+    throw GeneratorError("Word too big.");
   }
-  memcpy(it, wordBeg, bufSize);
-  it += bufSize;
-  *it = '\0';
-  return it;
+  memcpy(aIterator, aWordBeg, bufSize);
+  aIterator += bufSize;
+  *aIterator = '\0';
+  return aIterator;
 }
 
 inline char*
-writeText(char* it, const char* limit, const char* text)
+WriteText(char* aIterator, const char* aLimit, const char* aText)
 {
-  size_t bufSize = strlen(text);
-  if (it + bufSize >= limit) {
-    throw generator_error("Word too big.");
+  size_t bufSize = strlen(aText);
+  if (aIterator + bufSize >= aLimit) {
+    throw GeneratorError("Word too big.");
   }
-  memcpy(it, text, bufSize + 1);
-  return it + bufSize;
+  memcpy(aIterator, aText, bufSize + 1);
+  return aIterator + bufSize;
 }
 }
