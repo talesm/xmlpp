@@ -12,51 +12,51 @@ constexpr size_t TEST_BUF_SIZE = 1024;
 TEST_CASE("Generator Basics", "[xmlpp][generator][basics]")
 {
   char      buffer[TEST_BUF_SIZE];
-  generator g(buffer, TEST_BUF_SIZE);
+  Generator g(buffer, TEST_BUF_SIZE);
   SECTION("Empty TAG")
   {
-    g.rootTag("root").close();
+    g.RootTag("root").Close();
     REQUIRE(buffer == RESULT_STR("<root/>"));
   }
   SECTION("Empty TAG 2")
   {
-    g.rootTag("other-root").close();
+    g.RootTag("other-root").Close();
     REQUIRE(buffer == RESULT_STR("<other-root/>"));
   }
   SECTION("XML HEADER")
   {
-    g.version("1.1").encoding("ASCII");
-    g.rootTag("other-root").close();
+    g.Version("1.1").Encoding("ASCII");
+    g.RootTag("other-root").Close();
     REQUIRE(buffer == "<?xml version='1.1' encoding='ASCII'?><other-root/>"s);
   }
   SECTION("Tag With Parameters")
   {
-    auto tRoot = g.rootTag("root");
-    tRoot.addParameter("param1", "value1");
-    tRoot.addParameter("param2", "value2");
-    tRoot.close();
+    auto tRoot = g.RootTag("root");
+    tRoot.AddParameter("param1", "value1");
+    tRoot.AddParameter("param2", "value2");
+    tRoot.Close();
     REQUIRE(buffer == RESULT_STR("<root param1='value1' param2='value2'/>"));
   }
   SECTION("Tag With Sub tags")
   {
-    auto tRoot = g.rootTag("root");
-    tRoot.addTag("subTag").close();
-    tRoot.addTag("otherTag"); // auto closing
-    tRoot.close();
+    auto tRoot = g.RootTag("root");
+    tRoot.AddTag("subTag").Close();
+    tRoot.AddTag("otherTag"); // auto closing
+    tRoot.Close();
     REQUIRE(buffer == RESULT_STR("<root><subTag/><otherTag/></root>"));
   }
   SECTION("Text")
   {
-    auto tRoot = g.rootTag("root");
-    tRoot.addText("Some random text");
-    tRoot.close();
+    auto tRoot = g.RootTag("root");
+    tRoot.AddText("Some random text");
+    tRoot.Close();
     REQUIRE(buffer == RESULT_STR("<root>Some random text</root>"));
   }
   SECTION("Escaped text")
   {
-    auto tRoot = g.rootTag("root");
-    tRoot.addText("Some <random> text \n&scaped\1\x19");
-    tRoot.close();
+    auto tRoot = g.RootTag("root");
+    tRoot.AddText("Some <random> text \n&scaped\1\x19");
+    tRoot.Close();
     REQUIRE(
       buffer ==
       RESULT_STR(
@@ -64,9 +64,9 @@ TEST_CASE("Generator Basics", "[xmlpp][generator][basics]")
   }
   SECTION("Comments")
   {
-    auto tRoot = g.rootTag("root");
-    tRoot.addComment("Some <random> comment");
-    tRoot.close();
+    auto tRoot = g.RootTag("root");
+    tRoot.AddComment("Some <random> comment");
+    tRoot.Close();
     REQUIRE(buffer == RESULT_STR("<root><!--Some <random> comment--></root>"));
   }
 }
@@ -77,33 +77,33 @@ TEST_CASE("Generator Errors", "[xmlpp][generator][errors]")
 
   SECTION("Too small buffer")
   {
-    REQUIRE_THROWS_AS(generator(buffer, 1).rootTag("r").close(),
-                      generator_error);
+    REQUIRE_THROWS_AS(Generator(buffer, 1).RootTag("r").Close(),
+                      GeneratorError);
   }
-  generator g(buffer, TEST_BUF_SIZE);
+  Generator g(buffer, TEST_BUF_SIZE);
 
   SECTION("Parameters after first descendant")
   {
-    auto rootTag = g.rootTag("root");
-    rootTag.addText("Hi");
-    REQUIRE_THROWS(rootTag.addParameter("error", "error"));
+    auto rootTag = g.RootTag("root");
+    rootTag.AddText("Hi");
+    REQUIRE_THROWS(rootTag.AddParameter("error", "error"));
   }
 
   SECTION("Add descedant on a closed tag")
   {
-    auto rootTag   = g.rootTag("root");
-    auto branchTag = rootTag.addTag("branch");
-    rootTag.close();
-    REQUIRE_THROWS(rootTag.addText("Hi"));
-    REQUIRE_THROWS(rootTag.addTag("Hi"));
-    REQUIRE_THROWS(rootTag.addComment("Hi"));
-    REQUIRE_THROWS(branchTag.addText("Hi")); // TODO: Validate children when
+    auto rootTag   = g.RootTag("root");
+    auto branchTag = rootTag.AddTag("branch");
+    rootTag.Close();
+    REQUIRE_THROWS(rootTag.AddText("Hi"));
+    REQUIRE_THROWS(rootTag.AddTag("Hi"));
+    REQUIRE_THROWS(rootTag.AddComment("Hi"));
+    REQUIRE_THROWS(branchTag.AddText("Hi")); // TODO: Validate children when
                                              // parent closed.
   }
 
   SECTION("Check no double rootTag")
   {
-    auto rootTag = g.rootTag("root");
-    REQUIRE_THROWS(g.rootTag("root2"));
+    auto rootTag = g.RootTag("root");
+    REQUIRE_THROWS(g.RootTag("root2"));
   }
 }

@@ -7,25 +7,25 @@
 
 using namespace std;
 
-string readfile(const char* file);
-void eval(const string& buffer);
+string ReadFile(const char* aFile);
+void Eval(const string& aBuffer);
 
 int
 main()
 {
-  auto buffer = readfile(XMLPP_DIR "/examples/math.xml");
+  auto buffer = ReadFile(XMLPP_DIR "/examples/math.xml");
   cout << "Read buffer:" << endl;
   cout << buffer << endl << endl;
   cout << "Evals to: " << endl;
-  eval(buffer);
+  Eval(buffer);
   return 0;
 }
 
 void
-eval(const string& buffer)
+Eval(const string& aBuffer)
 {
   using namespace xmlpp;
-  Parser p(buffer.c_str());
+  Parser p(aBuffer.c_str());
   if (p.Type() != EntityType::TAG || p.Value() != "math") {
     throw runtime_error("Invalid formula");
   }
@@ -89,10 +89,10 @@ eval(const string& buffer)
 }
 
 inline string
-readfile(const char* file)
+ReadFile(const char* aFile)
 {
   string   buffer;
-  ifstream input(file);
+  ifstream input(aFile);
   string   line;
   while (getline(input, line)) {
     buffer += line + '\n';
