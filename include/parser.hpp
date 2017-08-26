@@ -1,6 +1,5 @@
 #pragma once
 
-#include "parser_error.hpp"
 #include <cassert>
 #include <cstring>
 #include <cuchar>
@@ -8,9 +7,16 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include "parser_error.hpp"
 
 namespace xmlpp {
-enum class entity_type { TAG, TAG_ENDING, COMMENT, TEXT };
+enum class entity_type
+{
+  TAG,
+  TAG_ENDING,
+  COMMENT,
+  TEXT
+};
 
 /**
  * @brief A parser adhering to SAX inteface.
@@ -19,21 +25,24 @@ enum class entity_type { TAG, TAG_ENDING, COMMENT, TEXT };
  * time you call next() (or operator++()) it will advance to next
  * entity, in a Depth first approach.
  */
-class parser {
+class parser
+{
 public:
-  static constexpr const char *BLANKS = " \t\n\r";
+  static constexpr const char* BLANKS = " \t\n\r";
   /**
    * @brief constructor that takes a c-string with the content.
    */
-  parser(const char *code) {
+  parser(const char* code)
+  {
     m_code = code;
     next();
   }
 
-  bool next() {
+  bool next()
+  {
     using namespace std;
     if (m_singletag) {
-      m_type = entity_type::TAG_ENDING;
+      m_type      = entity_type::TAG_ENDING;
       m_singletag = false;
       return true;
     }
@@ -61,12 +70,14 @@ public:
     return true;
   }
 
-  parser &operator++() {
+  parser& operator++()
+  {
     next();
     return *this;
   }
 
-  parser operator++(int) {
+  parser operator++(int)
+  {
     auto temp = *this;
     next();
     return temp;
@@ -85,12 +96,13 @@ public:
    * | ------ | ------------------------------------------ |
    * | tag    | the name of tag ("<root/>"'s name is root) |
    */
-  const std::string &value() const { return m_value; }
+  const std::string& value() const { return m_value; }
 
   /**
    * @brief the type of the parameters map.
    *
-   * The underline type is implementation defined. Please use the aliased type.
+   * The underline type is implementation defined. Please use the aliased
+   * type.
    * We guaranteed that it defines an iterator, the operator[], the begin(),
    * end(), count() and size() and is able to be used with range-for.
    */
@@ -101,7 +113,7 @@ public:
    *
    * The reference is valid until the next call of next() or operator++().
    */
-  const params_map &params() const { return m_params; }
+  const params_map& params() const { return m_params; }
 
   /**
    * @brief Return the document's encoding.
@@ -118,20 +130,21 @@ public:
 
    * In the future different behaviour can be enabled for different versions.
    */
-  const std::string &version() const { return m_version; }
+  const std::string& version() const { return m_version; }
 
 private:
-  const char *m_code;
-  entity_type m_type;
-  std::string m_value;
-  params_map m_params;
-  bool m_singletag = false;
-  bool m_initialized = false;
-  std::string m_version = "1.0";
+  const char*             m_code;
+  entity_type             m_type;
+  std::string             m_value;
+  params_map              m_params;
+  bool                    m_singletag   = false;
+  bool                    m_initialized = false;
+  std::string             m_version     = "1.0";
   std::stack<std::string> m_tagStack;
 
 private:
-  void nextTag() {
+  void nextTag()
+  {
     using namespace std;
     assert(*m_code == '<');
     auto tag_beg = ++m_code;
@@ -139,7 +152,7 @@ private:
     if (*m_code == '/') {
       closing = true;
       tag_beg = ++m_code;
-      m_type = entity_type::TAG_ENDING;
+      m_type  = entity_type::TAG_ENDING;
     } else {
       m_type = entity_type::TAG;
     }
@@ -171,13 +184,14 @@ private:
     }
   }
 
-  void nextComment() {
+  void nextComment()
+  {
     assert(*m_code++ == '<');
     assert(*m_code++ == '!');
     expect('-');
     expect('-');
-    auto comment_beg = m_code;
-    size_t level = 0;
+    auto   comment_beg = m_code;
+    size_t level       = 0;
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '-')
         ++level;
@@ -192,7 +206,8 @@ private:
     throw parser_error("Expected '-->' before end of the buffer");
   }
 
-  void nextText() {
+  void nextText()
+  {
     auto text_beg = m_code;
     m_value.clear();
     for (; *m_code != 0; ++m_code) {
@@ -215,7 +230,8 @@ private:
     m_value.append(text_beg, m_code);
   }
 
-  void nextDeclaration() {
+  void nextDeclaration()
+  {
     if (m_initialized) {
       throw parser_error("Invalid declaration or using processor "
                          "instruction, which aren't currently implemented.");
@@ -240,7 +256,8 @@ private:
     m_initialized = true;
   }
 
-  std::string cdataSequence() {
+  std::string cdataSequence()
+  {
     using namespace std;
     ensure('<');
     ensure('!');
@@ -251,7 +268,7 @@ private:
     expect('T');
     expect('A');
     expect('[');
-    auto cdata_beg = m_code;
+    auto   cdata_beg = m_code;
     string result;
     for (; *m_code != 0; ++m_code) {
       if (*m_code == ']' && *(m_code + 1) == ']' && *(m_code + 2) == '>') {
@@ -264,7 +281,8 @@ private:
     ensure('>');
     return result;
   }
-  std::string escapeSequence() {
+  std::string escapeSequence()
+  {
     using namespace std;
     ensure('&');
     auto escape_beg = m_code;
@@ -297,10 +315,10 @@ private:
             } else {
               string locale = std::setlocale(LC_ALL, nullptr);
               std::setlocale(LC_ALL, "en_US.utf8");
-              char buffer[MB_CUR_MAX + 1];
+              char           buffer[MB_CUR_MAX + 1];
               std::mbstate_t state{};
-              auto end = c32rtomb(buffer, value, &state);
-              buffer[end] = 0;
+              auto           end = c32rtomb(buffer, value, &state);
+              buffer[end]        = 0;
               std::setlocale(LC_ALL, locale.c_str());
               return string(buffer);
             }
@@ -316,12 +334,13 @@ private:
     }
   }
 
-  void parameters() {
+  void parameters()
+  {
     using namespace std;
   PARAM_NAME:
     ignoreBlanks();
-    string pname = "";
-    auto pname_beg = m_code;
+    string pname     = "";
+    auto   pname_beg = m_code;
     for (; *m_code != 0; ++m_code) {
       if (*m_code == '>' || *m_code == '/' || *m_code == '?') {
         return;
@@ -329,7 +348,7 @@ private:
       if (*m_code == '=' || strchr(BLANKS, *m_code)) {
         if (m_code == pname_beg) {
           throw parser_error(
-              "Invalid Parameter. A name is expected before the '='");
+            "Invalid Parameter. A name is expected before the '='");
         }
         pname.assign(pname_beg, m_code);
         goto PARAM_VALUE;
@@ -350,7 +369,7 @@ private:
                          "surrounded by \' or \", we got: '" +
                          *m_code + "'");
     }
-    char endToken = *m_code++;
+    char endToken   = *m_code++;
     auto pvalue_beg = m_code++;
     m_params[pname].clear();
     for (; *m_code != 0; ++m_code) {
@@ -371,7 +390,8 @@ private:
     throw parser_error("Unclosed parameter value");
   }
 
-  void expect(char expected) {
+  void expect(char expected)
+  {
     if (*m_code == expected) {
       ++m_code;
     } else {
@@ -381,12 +401,14 @@ private:
     }
   }
 
-  void ensure(char expected) {
+  void ensure(char expected)
+  {
     assert(*m_code == expected);
     ++m_code;
   }
 
-  size_t ignoreBlanks() {
+  size_t ignoreBlanks()
+  {
     auto initial = m_code;
     while (strchr(BLANKS, *m_code)) {
       ++m_code;
