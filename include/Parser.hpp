@@ -7,9 +7,16 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
-#include "ParserError.hpp"
 
 namespace xmlpp {
+/**
+ * @brief An error in parsing the XML.
+ */
+class ParserError : public std::runtime_error
+{
+  using std::runtime_error::runtime_error;
+};
+
 enum class EntityType
 {
   TAG,
@@ -172,7 +179,7 @@ private:
       }
     } else {
       if (mTagStack.top() != mValue) {
-        throw parser_error("Tag mismatch, opened with: " + mTagStack.top() +
+        throw ParserError("Tag mismatch, opened with: " + mTagStack.top() +
                            ", but closed with: " + mValue);
       }
       mTagStack.pop();
@@ -180,7 +187,7 @@ private:
     if (*mCode == '>') {
       ++mCode;
     } else {
-      throw parser_error("Unclosed tag.");
+      throw ParserError("Unclosed tag.");
     }
   }
 
@@ -203,7 +210,7 @@ private:
       } else
         level = 0;
     }
-    throw parser_error("Expected '-->' before end of the buffer");
+    throw ParserError("Expected '-->' before end of the buffer");
   }
 
   void NextText()
@@ -233,7 +240,7 @@ private:
   void NextDeclaration()
   {
     if (mInitialized) {
-      throw parser_error("Invalid declaration or using processor "
+      throw ParserError("Invalid declaration or using processor "
                          "instruction, which aren't currently implemented.");
     }
     assert(*mCode++ == '<');
@@ -245,7 +252,7 @@ private:
     if (mParams.count("encoding")) {
       auto encoding = mParams["encoding"];
       if (encoding != "UTF-8") {
-        throw parser_error("Invalid encoding:" + encoding);
+        throw ParserError("Invalid encoding:" + encoding);
       }
     }
     if (mParams.count("version")) {
@@ -332,7 +339,7 @@ private:
         return escapeMapping[escape];
       }
     }
-    throw parser_error("Invalid Escape Sequence");
+    throw ParserError("Invalid Escape Sequence");
   }
 
   void ReadParameters()
@@ -348,14 +355,14 @@ private:
       }
       if (*mCode == '=' || strchr(BLANKS, *mCode)) {
         if (mCode == pname_beg) {
-          throw parser_error(
+          throw ParserError(
             "Invalid Parameter. A name is expected before the '='");
         }
         pname.assign(pname_beg, mCode);
         goto PARAM_VALUE;
       }
     }
-    throw parser_error("Expected close tag or parameter definition");
+    throw ParserError("Expected close tag or parameter definition");
   PARAM_VALUE:
     IgnoreBlanks();
     if (*mCode != '=') {
@@ -365,7 +372,7 @@ private:
     ++mCode;
     IgnoreBlanks();
     if (!strchr("\"\'", *mCode)) {
-      throw parser_error("Invalid Parameter '" + pname +
+      throw ParserError("Invalid Parameter '" + pname +
                          "'. The parameter value must be "
                          "surrounded by \' or \", we got: '" +
                          *mCode + "'");
@@ -375,7 +382,7 @@ private:
     mParams[pname].clear();
     for (; *mCode != 0; ++mCode) {
       if (*mCode == '>') {
-        throw parser_error("Expected a \' or \" before <");
+        throw ParserError("Expected a \' or \" before <");
       }
       if (*mCode == '&') {
         mParams[pname].append(pvalue_beg, mCode);
@@ -388,7 +395,7 @@ private:
         goto PARAM_NAME;
       }
     }
-    throw parser_error("Unclosed parameter value");
+    throw ParserError("Unclosed parameter value");
   }
 
   void Expect(char aExpected)
@@ -397,7 +404,7 @@ private:
       ++mCode;
     } else {
       using namespace std;
-      throw parser_error("Expected char '"s + aExpected + "', got '" + *mCode +
+      throw ParserError("Expected char '"s + aExpected + "', got '" + *mCode +
                          "'.");
     }
   }

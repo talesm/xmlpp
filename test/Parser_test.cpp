@@ -17,7 +17,7 @@ TEST_CASE("Tags", "[xmlpp][parser][tags]")
 }
 TEST_CASE("Tag Error", "[xmlpp][parser][tags][error]")
 {
-  REQUIRE_THROWS_AS(Parser("<root"), parser_error);
+  REQUIRE_THROWS_AS(Parser("<root"), ParserError);
   // TODO: Other invalid chars.
 }
 
@@ -56,7 +56,7 @@ TEST_CASE("Tag closing", "[xmlpp][parser][tags]")
 }
 TEST_CASE("Tags closing mismatch", "[xmlpp][parser][tags]")
 {
-  REQUIRE_THROWS_AS(++++Parser("<root></notroot>"), parser_error);
+  REQUIRE_THROWS_AS(++++Parser("<root></notroot>"), ParserError);
 }
 
 TEST_CASE("Comments", "[xmlpp][parser][comments]")
