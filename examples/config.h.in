@@ -1,0 +1,3 @@
+#pragma once
+
+#define XMLPP_DIR "${PROJECT_SOURCE_DIR}"
