@@ -301,7 +301,7 @@ Parser::mNextDeclaration()
   mInitialized = true;
 }
 
-inline std::__cxx11::string
+inline std::string
 Parser::mCdataSequence()
 {
   using namespace std;
@@ -328,7 +328,7 @@ Parser::mCdataSequence()
   return result;
 }
 
-inline std::__cxx11::string
+inline std::string
 Parser::mEscapeSequence()
 {
   using namespace std;
