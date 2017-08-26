@@ -2,8 +2,8 @@
 #include <iostream>
 #include <stack>
 #include <string>
+#include "Parser.hpp"
 #include "config.h"
-#include "parser.hpp"
 
 using namespace std;
 

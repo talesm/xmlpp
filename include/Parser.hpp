@@ -7,7 +7,7 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
-#include "parser_error.hpp"
+#include "ParserError.hpp"
 
 namespace xmlpp {
 enum class entity_type

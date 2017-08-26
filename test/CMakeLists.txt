@@ -1,8 +1,8 @@
 
 add_executable(xmlpp_test
     catch
-    generator_test
-    parser_test
+    Generator_test
+    Parser_test
 )
 
 target_link_libraries(xmlpp_test
