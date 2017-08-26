@@ -56,23 +56,23 @@ public:
     if (*mCode == 0) {
       return false;
     }
-    auto space = IgnoreBlanks();
+    auto space = mIgnoreBlanks();
     if (*mCode == '<') {
       if (*(mCode + 1) == '!') {
         if (*(mCode + 2) == '-') {
-          NextComment();
+          mNextComment();
         } else if (*(mCode + 2) == '[') {
-          NextText();
+          mNextText();
         }
       } else if (*(mCode + 1) == '?') {
-        NextDeclaration();
+        mNextDeclaration();
         return Next();
       } else {
-        NextTag();
+        mNextTag();
       }
     } else {
       mCode -= space;
-      NextText();
+      mNextText();
     }
     return true;
   }
@@ -150,7 +150,7 @@ private:
   std::stack<std::string> mTagStack;
 
 private:
-  void NextTag()
+  void mNextTag()
   {
     using namespace std;
     assert(*mCode == '<');
@@ -166,7 +166,7 @@ private:
     for (; *mCode != 0; ++mCode) {
       if (strchr(BLANKS, *mCode) || *mCode == '>' || *mCode == '/') {
         mValue.assign(tag_beg, mCode);
-        ReadParameters();
+        mReadParameters();
         break;
       }
     }
@@ -191,12 +191,12 @@ private:
     }
   }
 
-  void NextComment()
+  void mNextComment()
   {
     assert(*mCode++ == '<');
     assert(*mCode++ == '!');
-    Expect('-');
-    Expect('-');
+    mExpect('-');
+    mExpect('-');
     auto   comment_beg = mCode;
     size_t level       = 0;
     for (; *mCode != 0; ++mCode) {
@@ -213,7 +213,7 @@ private:
     throw ParserError("Expected '-->' before end of the buffer");
   }
 
-  void NextText()
+  void mNextText()
   {
     auto text_beg = mCode;
     mValue.clear();
@@ -221,7 +221,7 @@ private:
       if (*mCode == '<') {
         if (*(mCode + 1) == '!' && *(mCode + 2) == '[') {
           mValue.append(text_beg, mCode);
-          mValue.append(CdataSequence());
+          mValue.append(mCdataSequence());
           text_beg = mCode--;
         } else {
           break;
@@ -229,7 +229,7 @@ private:
       }
       if (*mCode == '&') {
         mValue.append(text_beg, mCode);
-        mValue.append(EscapeSequence());
+        mValue.append(mEscapeSequence());
         text_beg = mCode--;
       }
     }
@@ -237,7 +237,7 @@ private:
     mValue.append(text_beg, mCode);
   }
 
-  void NextDeclaration()
+  void mNextDeclaration()
   {
     if (mInitialized) {
       throw ParserError("Invalid declaration or using processor "
@@ -245,10 +245,10 @@ private:
     }
     assert(*mCode++ == '<');
     assert(*mCode++ == '?');
-    Expect('x');
-    Expect('m');
-    Expect('l');
-    ReadParameters();
+    mExpect('x');
+    mExpect('m');
+    mExpect('l');
+    mReadParameters();
     if (mParams.count("encoding")) {
       auto encoding = mParams["encoding"];
       if (encoding != "UTF-8") {
@@ -258,23 +258,23 @@ private:
     if (mParams.count("version")) {
       mVersion = mParams["version"];
     }
-    Expect('?');
-    Expect('>');
+    mExpect('?');
+    mExpect('>');
     mInitialized = true;
   }
 
-  std::string CdataSequence()
+  std::string mCdataSequence()
   {
     using namespace std;
-    Ensure('<');
-    Ensure('!');
-    Ensure('[');
-    Expect('C');
-    Expect('D');
-    Expect('A');
-    Expect('T');
-    Expect('A');
-    Expect('[');
+    mEnsure('<');
+    mEnsure('!');
+    mEnsure('[');
+    mExpect('C');
+    mExpect('D');
+    mExpect('A');
+    mExpect('T');
+    mExpect('A');
+    mExpect('[');
     auto   cdata_beg = mCode;
     string result;
     for (; *mCode != 0; ++mCode) {
@@ -283,20 +283,20 @@ private:
         break;
       }
     }
-    Ensure(']');
-    Ensure(']');
-    Ensure('>');
+    mEnsure(']');
+    mEnsure(']');
+    mEnsure('>');
     return result;
   }
-  std::string EscapeSequence()
+  std::string mEscapeSequence()
   {
     using namespace std;
-    Ensure('&');
+    mEnsure('&');
     auto escape_beg = mCode;
     for (; *mCode != 0; ++mCode) {
       if (*mCode == ';') {
         std::string escape(escape_beg, mCode);
-        Ensure(';');
+        mEnsure(';');
         if (escape[0] == '#') {
           char32_t value = 0;
           if (escape[1] == 'x') {
@@ -342,11 +342,11 @@ private:
     throw ParserError("Invalid Escape Sequence");
   }
 
-  void ReadParameters()
+  void mReadParameters()
   {
     using namespace std;
   PARAM_NAME:
-    IgnoreBlanks();
+    mIgnoreBlanks();
     string pname     = "";
     auto   pname_beg = mCode;
     for (; *mCode != 0; ++mCode) {
@@ -364,13 +364,13 @@ private:
     }
     throw ParserError("Expected close tag or parameter definition");
   PARAM_VALUE:
-    IgnoreBlanks();
+    mIgnoreBlanks();
     if (*mCode != '=') {
       mParams[pname] = pname;
       goto PARAM_NAME;
     }
     ++mCode;
-    IgnoreBlanks();
+    mIgnoreBlanks();
     if (!strchr("\"\'", *mCode)) {
       throw ParserError("Invalid Parameter '" + pname +
                         "'. The parameter value must be "
@@ -386,7 +386,7 @@ private:
       }
       if (*mCode == '&') {
         mParams[pname].append(pvalue_beg, mCode);
-        mParams[pname].append(EscapeSequence());
+        mParams[pname].append(mEscapeSequence());
         pvalue_beg = mCode--;
       }
       if (*mCode == endToken) {
@@ -398,7 +398,7 @@ private:
     throw ParserError("Unclosed parameter value");
   }
 
-  void Expect(char aExpected)
+  void mExpect(char aExpected)
   {
     if (*mCode == aExpected) {
       ++mCode;
@@ -409,13 +409,13 @@ private:
     }
   }
 
-  void Ensure(char aExpected)
+  void mEnsure(char aExpected)
   {
     assert(*mCode == aExpected);
     ++mCode;
   }
 
-  size_t IgnoreBlanks()
+  size_t mIgnoreBlanks()
   {
     auto initial = mCode;
     while (strchr(BLANKS, *mCode)) {
