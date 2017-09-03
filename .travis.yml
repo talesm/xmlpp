@@ -14,8 +14,9 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-4.9
-        env:
-          - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+      env:
+        - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+        - CXXFLAGS="-std=c++1y"
 
     # works on Precise and Trusty
     - os: linux
@@ -25,8 +26,10 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-5
+            
       env:
-         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - CXXFLAGS="-std=c++1y"
 
     # works on Precise and Trusty
     - os: linux
@@ -38,7 +41,9 @@ matrix:
             - g++-6
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        - CXXFLAGS="-std=c++14"
         
+
 addons:
   apt:
     sources:
