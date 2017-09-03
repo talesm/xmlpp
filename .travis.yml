@@ -85,15 +85,16 @@ matrix:
             - llvm-toolchain-precise-3.8
           packages:
             - clang-3.8
-            - libc++-dev
+            - libstdc++-6-dev 
       env:
         - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
-        - CXXFLAGS="-std=c++14 -stdlib=libc++"
+        - CXXFLAGS="-std=c++14 -stdlib=libstdc++-6"
 
     - os: linux
       addons:
         apt:
           sources:
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-3.9
           packages:
             - clang-3.9
@@ -107,6 +108,8 @@ matrix:
       addons:
         apt:
           sources:
+          
+            - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-4.0
           packages:
             - clang-4.0
@@ -120,15 +123,15 @@ matrix:
       addons:
         apt:
           sources:
-            - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-5.0 main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-5.0
           packages:
             - clang-5.0
             - libc++-dev
             
       env:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"    
-        - CXXFLAGS="-std=c++14 -stdlib=libc++"
+        - CXXFLAGS="-std=c++14"
 
 addons:
   apt:
