@@ -85,30 +85,14 @@ matrix:
             - llvm-toolchain-precise-3.8
           packages:
             - clang-3.8
-            - libstdc++-6-dev 
       env:
         - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
-        - CXXFLAGS="-std=c++14 -stdlib=libstdc++-6"
+        - CXXFLAGS="-std=c++14"
 
     - os: linux
       addons:
         apt:
           sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-3.9
-          packages:
-            - clang-3.9
-            - libc++-dev
-
-      env:
-        - MATRIX_EVAL="CC=clang-3.9 && CXX=clang++-3.9"
-        - CXXFLAGS="-std=c++14 -stdlib=libc++"
-
-    - os: linux
-      addons:
-        apt:
-          sources:
-          
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-4.0
           packages:
