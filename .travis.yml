@@ -97,11 +97,9 @@ matrix:
             - llvm-toolchain-trusty-4.0
           packages:
             - clang-4.0
-            - libc++-dev
-            
       env:
         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
-        - CXXFLAGS="-std=c++14 -stdlib=libc++"
+        - CXXFLAGS="-std=c++14"
 
     - os: linux
       addons:
