@@ -2,12 +2,12 @@
 
 #include <cassert>
 #include <cstring>
-#include <cuchar>
 #include <functional>
 #include <map>
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <uchar.h>
 
 namespace xmlpp {
 /**
