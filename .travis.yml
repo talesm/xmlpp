@@ -85,7 +85,7 @@ matrix:
             - llvm-toolchain-precise-3.8
           packages:
             - clang-3.8
-            - 
+            - libc++-dev
       env:
         - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
         - CXXFLAGS="-std=c++14 -stdlib=libc++"
@@ -97,6 +97,8 @@ matrix:
             - llvm-toolchain-trusty-3.9
           packages:
             - clang-3.9
+            - libc++-dev
+
       env:
         - MATRIX_EVAL="CC=clang-3.9 && CXX=clang++-3.9"
         - CXXFLAGS="-std=c++14 -stdlib=libc++"
@@ -108,6 +110,8 @@ matrix:
             - llvm-toolchain-trusty-4.0
           packages:
             - clang-4.0
+            - libc++-dev
+            
       env:
         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
         - CXXFLAGS="-std=c++14 -stdlib=libc++"
@@ -120,6 +124,8 @@ matrix:
               key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
           packages:
             - clang-5.0
+            - libc++-dev
+            
       env:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"    
         - CXXFLAGS="-std=c++14 -stdlib=libc++"
