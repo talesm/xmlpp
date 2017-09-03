@@ -52,6 +52,9 @@ addons:
       - cmake-data
       - cmake
 
+before_install:
+    - eval "${MATRIX_EVAL}"
+
 before_script:
   - gcc -v && g++ -v && cmake --version
 
