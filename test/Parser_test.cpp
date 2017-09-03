@@ -115,3 +115,48 @@ TEST_CASE("Xml declartion", "[xmlpp][parser][declaration]")
   REQUIRE(Parser("<?xml version='1.1' encoding='UTF-8'?>text").Version() ==
           "1.1");
 }
+
+#include <iostream>
+
+TEST_CASE("Custom Loader", "[xmlpp][parser][custom-loader]")
+{
+  CHECK(Parser([]() { return "<tag1/>"; }).Value() == "tag1");
+  char value[32] = {0};
+  SECTION("Memory stuff")
+  {
+    struct CorrectStackChecker
+    {
+      char* mValue;
+      int*  mCounter;
+      CorrectStackChecker(char* aValue, int* aCounter)
+        : mValue(aValue)
+        , mCounter(aCounter)
+      {
+        strcpy(mValue, "<root></root>");
+        ++*mCounter;
+      }
+
+      CorrectStackChecker(const CorrectStackChecker& rhs)
+        : mValue(rhs.mValue)
+        , mCounter(rhs.mCounter)
+      {
+        ++*mCounter;
+      }
+
+      ~CorrectStackChecker()
+      {
+        if (--*mCounter == 0) {
+          strcpy(mValue, "<error></error>");
+        }
+      }
+      const char* operator()() const { return mValue; }
+    };
+    int    counter = 0;
+    Parser p(function<const char*()>(CorrectStackChecker{value, &counter}));
+    CHECK(p.Type() == EntityType::TAG);
+    CHECK(p.Value() == "root");
+    p.Next();
+    CHECK(p.Type() == EntityType::TAG_ENDING);
+    CHECK(p.Value() == "root");
+  }
+}

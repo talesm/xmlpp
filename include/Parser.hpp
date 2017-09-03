@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstring>
 #include <cuchar>
+#include <functional>
 #include <map>
 #include <stack>
 #include <string>
@@ -22,10 +23,11 @@ class ParserError : public std::runtime_error
  */
 enum class EntityType
 {
-  TAG,       //!< TAG A simple tag opening
-  TAG_ENDING,//!< TAG_ENDING A simple tag closing (Both events are generated, even for single tags.
-  COMMENT,   //!< COMMENT A comment
-  TEXT       //!< TEXT A text
+  TAG,        //!< TAG A simple tag opening
+  TAG_ENDING, //!< TAG_ENDING A simple tag closing (Both events are generated,
+              //! even for single tags.
+  COMMENT,    //!< COMMENT A comment
+  TEXT        //!< TEXT A text
 };
 
 /**
@@ -43,6 +45,16 @@ public:
    * @brief constructor that takes a c-string with the content.
    */
   Parser(const char* aCode);
+
+  /**
+   * Ctor based on simplified loader
+   */
+  Parser(std::function<const char*()> aLoader)
+    : mLoader(std::move(aLoader))
+  {
+    mCode = mLoader();
+    Next();
+  }
 
   /**
    * Advances to next entity.
@@ -68,7 +80,7 @@ public:
    * | ---------- | ---------------------------------------------------------- |
    * | TAG    	  | the name of tag ("<root/>"'s name is root)                 |
    * | TAG_ENDING | the name of tag ("<root/>"'s name is root)                 |
-   * | COMMENT    | the comment's content. No text transformation done.  	   |
+   * | COMMENT    | the comment's content. No text transformation done. |
    * | TEXT       | the text's content, with the escaping sequences translated |
    */
   const std::string& Value() const { return mValue; }
@@ -108,14 +120,15 @@ public:
   const std::string& Version() const { return mVersion; }
 
 private:
-  const char*             mCode;
-  EntityType              mType;
-  std::string             mValue;
-  ParamsMap               mParams;
-  bool                    mSingletag   = false;
-  bool                    mInitialized = false;
-  std::string             mVersion     = "1.0";
-  std::stack<std::string> mTagStack;
+  const char*                  mCode;
+  EntityType                   mType;
+  std::string                  mValue;
+  ParamsMap                    mParams;
+  bool                         mSingletag   = false;
+  bool                         mInitialized = false;
+  std::string                  mVersion     = "1.0";
+  std::stack<std::string>      mTagStack;
+  std::function<const char*()> mLoader;
 
 private:
   void mNextTag();
