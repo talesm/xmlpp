@@ -3,8 +3,42 @@ sudo: false
 dist: trusty
 
 env:
- - CXXFLAGS="-std=c++14"
+ - CXXFLAGS="-std=c++11"
 
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+        env:
+          - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9"
+
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-6
+      env:
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+        
 addons:
   apt:
     sources:
@@ -12,14 +46,9 @@ addons:
     packages:
       - cmake-data
       - cmake
-      - g++-6
-
-compiler:
-  - g++-6
 
 before_script:
   - gcc -v && g++ -v && cmake --version
-  - CC=gcc-6 && CXX=g++-6
 
 script: 
   - mkdir build/ && cd build/
